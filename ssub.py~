@@ -1,6 +1,12 @@
 #!/usr/bin/env python
-import argparse, os, re, select, stat, subprocess, sys, tempfile, time
 from util import *
+
+a = timer()
+print a.next()
+
+import argparse, os, re, select, stat, subprocess, sys, tempfile, time
+
+print a.next()
 
 '''
 ssub is a simple job submission script
@@ -30,6 +36,8 @@ to create and run pipelines:
 
 '''
 
+print a.next()
+
 # global variables
 usage = "cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n\
   ssub -n 100 -q week -G broadfolk -m 8 --io 10 'command1; command2; command3;'"
@@ -52,6 +60,8 @@ if mode == 'LSF':
 elif mode == 'PBS':
     submit_cmd = 'qsub'
     stat_cmd = 'qstat -l'
+
+print a.next()
 
 def parse_args():
     # parse command line arguments
@@ -251,7 +261,13 @@ def initialize():
 
     return args, commands
 
+print a.next()
+
 args, commands = initialize()
+
+print a.next()
 
 if __name__ == '__main__':
     submit_array(args, commands)
+
+print a.next()

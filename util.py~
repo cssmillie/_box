@@ -1,4 +1,4 @@
-import sys
+import sys, time
 import pandas as pd
 
 def message(text):
@@ -69,3 +69,13 @@ def cycle(x):
     while True:
         for xi in x:
             yield xi
+
+def timer():
+    # generator function that measures elapsed time
+    t =[]
+    while True:
+        t.append(time.time())
+        if len(t) > 1:
+            yield t[-1] - t.pop(0)
+        else:
+            yield 0
