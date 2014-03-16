@@ -39,6 +39,20 @@ def iter_fst(fn):
     yield [sid, seq]
 
 
+def iter_fsq(fn):
+    # generator that returns records in a fastq file
+    record = []
+    i = 0
+    for line in open(fn):
+        i += 1
+        if i % 4 == 1:
+            if len(record) > 0:
+                yield record
+            record = []
+        record.append(line.rstrip())
+    yield record
+
+
 def read_fst(fn, reverse=False):
     # read fasta file as dictionary
     fst = {}
