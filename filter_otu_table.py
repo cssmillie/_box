@@ -5,6 +5,7 @@ from util import *
 
 def parse_args():
     # parse command line arguments
+    parser = argparse.ArgumentParser()
     parser.add_argument('-i', default = '', help = 'input file')
     parser.add_argument('-o', default = '', help = 'output file')
     parser.add_argument('--row_regex', default = '', help = 'keep rows that match regex')
@@ -21,6 +22,7 @@ def parse_args():
     parser.add_argument('--max_med', default = np.nan, type = float, help = 'min_med < median < max_med')
     parser.add_argument('--top', default = np.nan, type = float, help = 'select most abundant otus (fraction or int)')
     args = parser.parse_args()
+    return args
 
 
 def fmessage(data, text):
@@ -65,7 +67,7 @@ def filter_otu_table(args, data):
         fmessage('--min_med %f: filtering by median abundance' %(args.min_med))
     if args.max_med:
         data = data.ix[:, data.median(axis=0) <= args.max_med]
-        fmessage('--max_med %f: filtering by maximum abundance' %(args.max_med)))
+        fmessage('--max_med %f: filtering by maximum abundance' %(args.max_med))
     # select most abundant otus
     if args.top:
         if args.top < 1:
