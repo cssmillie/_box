@@ -1,3 +1,33 @@
+'''
+ssub is a simple job submission script
+
+usage:
+  cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10
+  ssub -n 100 -q week -G broadfolk -m 8 --io 10 'command1; command2; command3;'
+
+to use it as a python library:
+  import ssub
+  ssub.args.n = 100
+  ssub.args.q = 'hour'
+  commands = get_commands()
+  job_ids = submit_array(ssub.args, commands)
+  wait_for_jobs(job_ids)
+  print 'done'
+
+to create and run pipelines:
+  import ssub
+  ssub.args.q = 'week'
+  ssub.args.G = 'broadfolk'
+  commands1 = run_blast()
+  commands2 = parse_blast()
+  pipeline = [commands1, commands2]
+  submit_pipeline(args, pipeline)
+  print 'done'
+
+'''
+
+
+
 #!/usr/bin/env python
 
 import argparse, os, re, select, stat, subprocess, sys, tempfile, time
