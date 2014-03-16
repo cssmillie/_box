@@ -27,7 +27,7 @@ def read_tseries(fn):
 
 
 def iter_fst(fn):
-    # generator that returns [sid, seq] pairs in a fasta file
+    # generator that iterates through [sid, seq] pairs in a fasta file
     seq = ''
     for line in open(fn):
         line = line.rstrip()
@@ -42,7 +42,7 @@ def iter_fst(fn):
 
 
 def iter_fsq(fn):
-    # generator that returns records in a fastq file
+    # generator that iterates through records in a fastq file
     record = []
     i = 0
     for line in open(fn):
@@ -65,18 +65,20 @@ def read_fst(fn, reverse=False):
             fst[seq] = sid
     return fst
 
+
 def cycle(x):
     # an efficient way to cycle through a list (similar to itertools.cycle)
     while True:
         for xi in x:
             yield xi
 
-def timer():
-    # generator function that measures elapsed time
-    t =[]
-    while True:
-        t.append(time.time())
-        if len(t) > 1:
-            yield t[-1] - t.pop(0)
-        else:
-            yield 0
+
+class timer():
+    # generator that measures elapsed time
+    def __init__(self):
+        self.t = [time.time()]
+    def __iter__(self):
+        return self
+    def next(self):
+        self.t.append(time.time())
+        return self.t[-1] - self.t.pop(0)

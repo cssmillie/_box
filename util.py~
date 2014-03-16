@@ -1,5 +1,4 @@
 import sys, time
-import pandas as pd
 
 def message(text):
     # print message to stderr
@@ -13,6 +12,7 @@ def read_list(fn, dtype=str):
 
 
 def read_dataframe(fn, index_dtype=str, columns_dtype=str):
+    import pandas as pd
     # read file as pandas dataframe
     x = pd.read_table(fn, sep='\t', header=0, index_col=0)
     x.index = x.index.astype(index_dtype)
@@ -21,6 +21,7 @@ def read_dataframe(fn, index_dtype=str, columns_dtype=str):
 
 
 def read_tseries(fn):
+    import pandas as pd
     # read file as pandas time series
     return read_dataframe(fn, index_dtype=float, columns_dtype=str)
 
