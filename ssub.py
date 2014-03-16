@@ -206,6 +206,7 @@ def submit_pipeline(args, pipeline):
 
 
 def initialize():
+    # initialize global variables for ssub
     
     # parse command line args
     args = parse_args()
