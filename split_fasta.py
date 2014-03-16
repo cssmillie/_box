@@ -1,13 +1,13 @@
 '''
-split fastq into k files
+split fasta into k files
 
 usage:
-  python split_fastq.py in.fsq 3
+  python split_fasta.py in.fst 3
 
 creates 3 files:
-  in.fsq.1
-  in.fsq.2
-  in.fsq.3
+  in.fst.1
+  in.fst.2
+  in.fst.3
   
 '''
 
