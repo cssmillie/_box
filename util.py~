@@ -1,10 +1,5 @@
 import pandas as pd
 
-def message(text):
-    # print message to stderr
-    sys.stderr.write('  %s\n' %(text))
-
-
 def read_list(fn, dtype=str):
     # read file as list
     x = [dtype(line.rstrip()) for line in open(fn)]
@@ -48,9 +43,3 @@ def read_fst(fn, reverse=False):
         elif reverse == True:
             fst[seq] = sid
     return fst
-
-def cycle(x):
-    # an efficient way to cycle through a list (similar to itertools.cycle)
-    while True:
-        for xi in x:
-            yield xi
