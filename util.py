@@ -1,8 +1,20 @@
-import sys, time
+import re, string, sys, time
 
-def message(text):
+rctab = string.maketrans('ACGTacgt','TGCAtgca')
+
+def message(text, indent=2):
     # print message to stderr
-    sys.stderr.write('  %s\n' %(text))
+    space = ' ' * indent
+    text = re.sub('\n', '\n%s' %(space), text)
+    sys.stderr.write('%s%s\n' %(space, text))
+
+
+def error(text, indent=2):
+    # print message to stderr and quit
+    space = ' ' * indent
+    text = re.sub('\n', '\n%s' %(space), text)
+    sys.stderr.write('%s%s\n' %(space, text))
+    quit()
 
 
 def read_list(fn, dtype=str):
@@ -82,3 +94,9 @@ class timer():
     def next(self):
         self.t.append(time.time())
         return self.t[-1] - self.t.pop(0)
+
+
+def reverse_complement(x):
+    return x[::-1].translate(rctab)
+
+

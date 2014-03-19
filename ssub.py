@@ -31,228 +31,319 @@ to create and run pipelines:
 
 '''
 
-# global variables
-usage = "cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n\
-  ssub -n 100 -q week -G broadfolk -m 8 --io 10 'command1; command2; command3;'"
-
-# configure parameters for the cluster
+# set global variables
 username = 'csmillie'
-mode = 'LSF'
-temp_dir = '/home/unix/csmillie/tmp'
-default_q = 'hour'
-default_G = 'gscidfolk'
-default_m = 4
-default_n = 150
-default_io = 1
-header = '#!/bin/bash\nsource /home/unix/%s/.bashrc\n' %(username)
+temp_dir = '~/tmp'
+cluster = 'coyote'
 
-# get submit and stat commands
-if mode == 'LSF':
-    submit_cmd = 'bsub'
-    stat_cmd = 'bjobs -w'
-elif mode == 'PBS':
-    submit_cmd = 'qsub'
-    stat_cmd = 'qstat -l'
 
 def parse_args():
-    # parse command line arguments
+    
+    # print usage statement
+    usage = "cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n"
+    usage +="ssub -n 100 -q week -G broadfolk -m 8 --io 10 'command 1; command 2; command 3;"
+    
+    # add command line arguments
     parser = argparse.ArgumentParser(usage = usage)
-    parser.add_argument('-n', default = default_n, type = int, help = 'number of cpus')
-    parser.add_argument('-q', default = default_q, help = 'queue')
-    parser.add_argument('-G', default = default_G, help = 'group')
-    parser.add_argument('-m', default = default_m, help = 'memory (gb)')
-    parser.add_argument('--io', default = default_io, help = 'disk io (units)')
+    parser.add_argument('-n', default = 100, type = int, help = 'number of cpus')
+    parser.add_argument('-q', default = 'hour', help = 'queue')
+    parser.add_argument('-G', default = 'gscidfolk', help = 'group')
+    parser.add_argument('-m', default = 4, help = 'memory (gb)')
+    parser.add_argument('--io', default = 1, help = 'disk io (units)')
     parser.add_argument('commands', nargs = '?', default = '')
-    args = parser.parse_args()
+    
+    # parse arguments from stdin
+    if __name__ == '__main__':
+        args = parser.parse_args()
+    else:
+        args = parser.parse_args('')
     return args
 
 
-def parse_job(out, mode=mode):
-    # parse job_id from the output of submit_cmd
-    if mode == 'LSF':
-        job_id = re.search('Job <(\d+)>', out).group(1)
-    elif mode == 'PBS':
-        job_id = out.rstrip()
-    return job_id
-
-
-def job_status():
-    # return job status (e.g. bjobs -w)
-    process = subprocess.Popen([stat_cmd], stdout = subprocess.PIPE, shell=True)
-    [out, err] = process.communicate()
-    out = [line for line in out.split('\n') if stat_username in line]
-    return [out, err]
-
-
-def n_jobs():
-    # calculate the number of running jobs
-    return len(job_status())
-
-
-def jobs_finished(job_ids):
-    # check if jobs are finished
-    [out, err] = job_status()
-    for job in out:
-        for job_id in job_ids:
-            if job_id in job:
-                return False
-    return True
-
-
-def mktemp(suffix='.tmp', dir='', header=''):
-    # make temporary file and return [filehandle, filename]
-    fh, fn = tempfile.mkstemp(suffix='.sh', dir=temp_dir)
-    os.close(fh)
-    fh = open(fn, 'w')
-    fh.write(header)
-    return fh, fn
-
-
-def write_jobs(args, commands):
-    # write job scripts from a list of commands
+class Ssub():
     
-    # initialize output files
-    fhs, fns = zip(*[mktemp(suffix='.sh', dir=temp_dir, header=header) for i in range(min(args.n, len(commands)))])
-    fhs_cycle = cycle(fhs)
+    def __init__(self, cluster = 'broad'):
+        
+        # get command line arguments
+        args = parse_args()
+        
+        # initialize cluster parameters
+        self.cluster = cluster
+        self.username = username
+        self.temp_dir = temp_dir
+        self.header = '#!/bin/bash\nsource /home/unix/%s/.bashrc\n' %(username)
+        self.n = args.n
+        self.m = args.m
+        self.q = args.q
+        self.G = args.G
+        self.io = args.io
+        self.commands = args.commands
+        
+        # broad parameters
+        if cluster == 'broad':
+            self.submit_cmd = 'bsub'
+            self.stat_cmd = 'bjobs -w'
+            self.parse_job = lambda x: re.search('Job <(\d+)>', x).group(1)
+        
+        # coyote parameters
+        elif cluster == 'coyote':
+            self.submit_cmd = 'qsub'
+            self.stat_cmd = 'qstat -l'
+            self.parse_job = lambda x: out.rstrip()
+        
+        # unrecognized cluster
+        else:
+            error('unrecognized cluster %s' %(cluster))
     
-    # write commands to file
-    for command in commands:
-        fh = fhs_cycle.next()
-        fh.write('%s\n' %(command))
+            
+    def __repr__(self):
+        return '\ncluster: %s\nusername: %s\ntemp_dir: %s\nn: %d\nm: %d\nq: %s\nG: %s\nio: %s\n' %(self.cluster, self.username, self.temp_dir, self.n, self.m, self.q, self.G, self.io)
     
-    # close all filehandles
-    for fh in fhs:
+    
+    def __str__(self):
+        a = self.__repr__()
+        a = re.sub('\n', '\n  ', a)
+        return a
+    
+    
+    def mktemp(self, suffix = '.tmp'):
+        # make temporary file and return [fh, fn]
+        fh, fn = tempfile.mkstemp(suffix='.sh', dir=self.temp_dir)
+        os.close(fh)
+        fh = open(fn, 'w')
+        fh.write(self.header)
+        return fh, fn
+    
+    
+    def job_status(self):
+        # return job status
+        process = subprocess.Popen([self.stat_cmd], stdout = subprocess.PIPE, shell=True)
+        [out, err] = process.communicate()
+        out = [line for line in out.split('\n') if self.username in line]
+        return [out, err]
+    
+    
+    def jobs_finished(self, job_ids):
+        # check if jobs are finished
+        [out, err] = self.job_status()
+        for job in out:
+            for job_id in job_ids:
+                if job_id in job:
+                    return False
+        return True
+    
+    
+    def write_jobs(self, commands):
+        # write job scripts from a list of commands
+        
+        # initialize output files
+        fhs, fns = zip(*[self.mktemp(suffix='.sh') for i in range(min(self.n, len(commands)))])
+        fhs_cycle = cycle(fhs)
+        
+        # write commands to file
+        for command in commands:
+            fh = fhs_cycle.next()
+            fh.write('%s\n' %(command))
+        
+        # close all filehandles
+        for fh in fhs:
+            fh.close()
+        
+        # make executable and print message
+        for fn in fns:
+            os.chmod(fn, stat.S_IRWXU)
+            message('Writing job %s' %(fn))
+        
+        return fns
+    
+    
+    def submit_jobs(self, fns):
+        # submit jobs to the cluster
+        job_ids = []
+        for fn in fns:
+            process = subprocess.Popen(['%s < %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            [out, error] = process.communicate()
+            job_ids.append(self.parse_job(out))
+            message('Submitting job %s' %(fn))
+        return job_ids
+    
+    
+    def write_LSF_array(self, fns):
+        # write an LSF job array from args and filenames
+        
+        # initialize output file
+        fh, array_fn = self.mktemp(suffix='.sh')
+        array_fn = os.path.abspath(array_fn)
+        
+        # write header
+        fh.write('#BSUB -J "job[1-%d]"\n' %(len(fns)))
+        fh.write('#BSUB -e %s.e.%%I\n' %(array_fn))
+        fh.write('#BSUB -o %s.o.%%I\n' %(array_fn))
+        fh.write('#BSUB -q %s\n' %(self.q))
+        fh.write('#BSUB -G %s\n' %(self.G))
+        fh.write('#BSUB -R "rusage[mem=%s:argon_io=%s]"\n' %(self.m, self.io))
+        fh.write('#BSUB -P %s\n' %(array_fn))
+        fh.write('cd $LS_SUBCWD\n')
+        
+        # write job array
+        for i, fn in enumerate(fns):
+            os.chmod(fn, stat.S_IRWXU)
+            fh.write('job_array[%d]=%s\n' %(i+1, os.path.abspath(fn)))
+        fh.write('${job_array[$LSB_JOBINDEX]};\n')
         fh.close()
+        
+        # make executable and print message
+        os.chmod(array_fn, stat.S_IRWXU)
+        message('Writing array %s' %(array_fn))
+        return array_fn
     
-    # make executable and print message
-    for fn in fns:
-        os.chmod(fn, stat.S_IRWXU)
-        message('Writing job %s' %(fn))
     
-    return fns
-
-
-def submit_jobs(fns):
-    # submit jobs to the cluster
-    job_ids = []
-    for fn in fns:
-        process = subprocess.Popen(['%s < %s' %(submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
-        [out, error] = process.communicate()
-        job_ids.append(parse_job(out))
-        message('Submitting job %s' %(fn))
-    return job_ids
-
-
-def write_LSF_array(args, fns):
-    # write an LSF job array from args and filenames
+    def write_PBS_array(self, fns):
+        # write a PBS job array from args and filenames
+        
+        # initialize output file
+        fh, array_fn = self.mktemp(suffix='.sh')
+        array_fn = os.path.abspath(fn)
+        
+        # write header
+        fh.write('#PBS -t 1-%d\n' %(len(fns)))
+        fh.write('#PBS -e %s.e\n' %(array_fn))
+        fh.write('#PBS -o %s.o\n' %(array_fn))
+        fh.write('#PBS -q %s\n' %(self.q))
+        fh.write('#PBS -l pmem=%sgb\n' %(self.m))
+        fh.write('cd $PBS_O_WORKDIR\n')
+        
+        # write job array
+        for i, fn in enumerate(fns):
+            os.chmod(fn, stat.S_IRWXU)
+            fh.write('job_array[%d]=%s\n' %(i+1, os.path.abspath(fn)))
+        fh.write('${job_array[$PBS_ARRAYID]};\n')
+        fh.close()
+        
+        # make executable and print message
+        os.chmod(array_fn, stat.S_IRWXU)
+        message('Writing array %s' %(array_fn))
+        return array_fn
     
-    # initialize output file
-    fh, array_fn = mktemp(suffix='.sh', dir=temp_dir, header=header)
-    array_fn = os.path.abspath(array_fn)
     
-    # write header
-    fh.write('#BSUB -J "job[1-%d]"\n' %(len(fns)))
-    fh.write('#BSUB -e %s.e.%%I\n' %(array_fn))
-    fh.write('#BSUB -o %s.o.%%I\n' %(array_fn))
-    fh.write('#BSUB -q %s\n' %(args.q))
-    fh.write('#BSUB -G %s\n' %(args.G))
-    fh.write('#BSUB -R "rusage[mem=%s:argon_io=%s]"\n' %(args.m, args.io))
-    fh.write('#BSUB -P %s\n' %(array_fn))
-    fh.write('cd $LS_SUBCWD\n')
+    def write_job_array(self, fns):
+        # write a job array (LSF or PBS)
+        if self.cluster == 'broad':
+            array_fn = self.write_LSF_array(fns)
+        elif self.cluster == 'coyote':
+            array_fn = self.write_PBS_array(fns)
+        return array_fn
     
-    # write job array
-    for i, fn in enumerate(fns):
-        os.chmod(fn, stat.S_IRWXU)
-        fh.write('job_array[%d]=%s\n' %(i+1, os.path.abspath(fn)))
-    fh.write('${job_array[$LSB_JOBINDEX]};\n')
-    fh.close()
     
-    # make executable and print message
-    os.chmod(array_fn, stat.S_IRWXU)
-    message('Writing array %s' %(array_fn))
-    return array_fn
-
-
-def write_PBS_array(args, fns):
-    # write a PBS job array from args and filenames
+    def submit(self, commands, out = False):
+        # submit a job array to the cluster
+        if out == False:
+            fns = self.write_jobs(commands)
+            array_fn = self.write_job_array(fns)
+            job_ids = self.submit_jobs([array_fn])
+            return job_ids
+        elif out == True:
+            print '\n'.join(commands)
+            return []
     
-    # initialize output file
-    fh, array_fn = mktemp(suffix='.sh', dir=temp_dir, header=header)
-    array_fn = os.path.abspath(fn)
     
-    # write header
-    fh.write('#PBS -t 1-%d\n' %(len(fns)))
-    fh.write('#PBS -e %s.e\n' %(array_fn))
-    fh.write('#PBS -o %s.o\n' %(array_fn))
-    fh.write('#PBS -q %s\n' %(args.q))
-    fh.write('#PBS -l pmem=%sgb\n' %(args.m))
-    fh.write('cd $PBS_O_WORKDIR\n')
+    def wait(self, job_ids, out = False):
+        # wait for jobs to finish
+        if out == False:
+            while True:
+                time.sleep(5)
+                if self.jobs_finished(job_ids):
+                    break 
     
-    # write job array
-    for i, fn in enumerate(fns):
-        os.chmod(fn, stat.S_IRWXU)
-        fh.write('job_array[%d]=%s\n' %(i+1, os.path.abspath(fn)))
-    fh.write('${job_array[$PBS_ARRAYID]};\n')
-    fh.close()
     
-    # make executable and print message
-    os.chmod(array_fn, stat.S_IRWXU)
-    message('Writing array %s' %(array_fn))
-    return array_fn
-
-
-def write_job_array(args, fns, mode):
-    # write a job array (LSF or PBS)
-    if mode == 'LSF':
-        array_fn = write_LSF_array(args, fns)
-    elif mode == 'PBS':
-        array_fn = write_PBS_array(args, fns)
-    return array_fn
-
-
-def submit_array(args, commands):
-    # submit a job array to the cluster
-    fns = write_jobs(args, commands)
-    array_fn = write_LSF_array(args, fns)
-    job_id = submit_jobs([array_fn])[0]
-    return job_id
-
-
-def wait_for_jobs(job_ids):
-    # wait for jobs to finish
-    while True:
-        time.sleep(5)
-        if jobs_finished(job_ids):
-            break
-
-
-def submit_pipeline(args, pipeline):
-    # a pipeline is a list of lists of commands
-    for commands in pipeline:
-        job_ids = submit_array(args, commands)
-        wait_for_jobs(job_ids)
+    def submit_and_wait(self, commands, out = False):
+        # submit job array and wait for it to finish
+        job_ids = self.submit(commands, out = out)
+        self.wait(job_ids)
+    
+    
+    def submit_pipeline(self, pipeline, out = False):
+        # a pipeline is a list of lists of commands
+        for commands in pipeline:
+            self.submit_and_wait(commands, out = out)
+    
+    
+    def validate_output(self, fns):
+        # make sure files exist
+        test = [os.path.exists(fn) for fn in fns]
+        if False in test:
+            error('file %s does not exist' %(fns[test.index(False)]))
+    
+    
+    def remove_files(self, fns, out = False, to_queue = False):
+        # remove list of files
+        cmds = ['rm %s' %(fn) for fn in fns]
+        if out == False:
+            if to_queue == False:
+                for cmd in cmds:
+                    os.system(cmd)
+            elif to_queue == True:
+                self.submit_and_wait(cmds, out = out)
+        elif out == True:
+            print '\n'.join(cmds)
+    
+    
+    def move_files(x, y, out = False, to_queue = False):
+        # move files from x to y
+        if len(x) != len(y):
+            error('move_files: len(x) != len(y)')
+        cmds = ['mv %s %s' %(a, b) for a, b in zip(x, y)]
+        if out == False:
+            if to_queue == False:
+                for cmd in cmds:
+                    os.system(cmd)
+            elif to_queue == True:
+                self.submit_and_wait(cmds, out = out)
+        else:
+            print '\n'.join(cmds)
+    
+    
+    def gzip_and_validate(self, fns, tgz, out = False, to_queue = False):
+        # compress files and validate .gz file
+        cmd = 'tar -cvzf %s %s' %(tgz, ' '.join(fns))
+        if out == False:
+            if to_queue == False:
+                os.system(cmd)
+            else:
+                self.submit_and_wait(args, [cmd])
+            try:
+                test = subprocess.check_output(['gunzip', '-t', tgz])
+                if test != '':
+                    error('gunzip -t %s failed' %(tgz))
+            except:
+                error('gunzip -t %s failed' %(tgz))
+        elif out == True:
+            print cmd
+    
+    
 
 
 def initialize():
     # initialize global variables for ssub
     
     # parse command line args
-    args = parse_args()
-
+    ssub = Ssub()
+    
     # get list of commands
     commands = []
-    if args.commands != '':
-        commands += [command.strip() for command in args.commands.split(';')]
+    if ssub.commands != '':
+        commands += [command.strip() for command in ssub.commands.split(';')]
     if select.select([sys.stdin], [], [], 0)[0]:
         commands += [line.rstrip() for line in sys.stdin.readlines()]
     
     # calculate number of cpus
-    if args.n < 0:
-        args.n = len(commands)
+    if ssub.n < 0:
+        ssub.n = len(commands)
+    
+    return ssub, commands
 
-    return args, commands
 
-args, commands = initialize()
+ssub, commands = initialize()
 
 if __name__ == '__main__':
-    submit_array(args, commands)
+    ssub.submit_array(commands)
