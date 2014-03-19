@@ -259,7 +259,7 @@ class Ssub():
     def submit_and_wait(self, commands, out = False):
         # submit job array and wait for it to finish
         job_ids = self.submit(commands, out = out)
-        self.wait(job_ids)
+        self.wait(job_ids, out = out)
     
     
     def submit_pipeline(self, pipeline, out = False):
@@ -268,11 +268,12 @@ class Ssub():
             self.submit_and_wait(commands, out = out)
     
     
-    def validate_output(self, fns):
+    def validate_output(self, fns, out = False):
         # make sure files exist
-        test = [os.path.exists(fn) for fn in fns]
-        if False in test:
-            error('file %s does not exist' %(fns[test.index(False)]))
+        if out == False:
+            test = [os.path.exists(fn) for fn in fns]
+            if False in test:
+                error('file %s does not exist' %(fns[test.index(False)]))
     
     
     def remove_files(self, fns, out = False, to_queue = False):
@@ -288,7 +289,7 @@ class Ssub():
             print '\n'.join(cmds)
     
     
-    def move_files(x, y, out = False, to_queue = False):
+    def move_files(self, x, y, out = False, to_queue = False):
         # move files from x to y
         if len(x) != len(y):
             error('move_files: len(x) != len(y)')
@@ -320,6 +321,14 @@ class Ssub():
         elif out == True:
             print cmd
     
+    
+    def run_local(self, commands, out = False):
+        # Run commands locally
+        if out == False:
+            for command in commands:
+                os.system(command)
+        elif out == True:
+            print '\n'.join(commands)
     
 
 
