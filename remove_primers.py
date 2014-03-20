@@ -1,8 +1,6 @@
 import argparse, primer, sys
 from util import *
 
-MAX_PRIMER_DIFFS = 2
-
 def mismatches(seq, subseq, w):
     # calculate mismatches between seq and subseq with window size w
     I = 0
@@ -32,6 +30,7 @@ def remove_primers():
 
 fasta = sys.argv[1]
 prime = sys.argv[2]
+MAX_PRIMER_DIFFS = int(sys.argv[3])
 PL = len(prime)
 
 # Remove primers

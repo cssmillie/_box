@@ -30,8 +30,8 @@ def parse_args():
     group1.add_argument('--ref_gg', default = False, action = 'store_true', help = 'Reference mapping (Greengenes)?')
     group2.add_argument('-f', help = 'Input fastq (forward)')
     group2.add_argument('-r', help = 'Input fastq (reverse)')
-    group2.add_argument('-p', help = 'Primer fastq (forward)')
-    group2.add_argument('-q', help = 'Primer fastq (reverse)')
+    group2.add_argument('-p', help = 'Primer sequence (forward)')
+    group2.add_argument('-q', help = 'Primer sequence (reverse)')
     group2.add_argument('-b', help = 'Barcodes list')
     group2.add_argument('-x', help = 'Index fastq')
     group3.add_argument('--p_mismatch', default = 1, type = int, help = 'Number of mismatches allowed in primers')
@@ -118,10 +118,10 @@ class OTU_Caller():
         cmds = []
         for i in range(self.n):
             if self.f:
-                cmd = '~/box/remove_primer.py %s %s > %s' %(self.fi[i], self.p, self.Fi[i])
+                cmd = '~/box/remove_primers.py %s %s %d > %s' %(self.fi[i], self.p, self.p_mismatch, self.Fi[i])
                 cmds.append(cmd)
             if self.r:
-                cmd = '~/box/remove_primer.py %s %s > %s' %(self.ri[i], self.q, self.Ri[i])
+                cmd = '~/box/remove_primers.py %s %s %d > %s' %(self.ri[i], self.q, self.p_mismatch, self.Ri[i])
                 cmds.append(cmd)
         
         # Submit commands and validate output
@@ -156,7 +156,7 @@ class OTU_Caller():
         # Demultiplex samples using index and barcodes
         cmds = []
         for i in range(self.n):
-            cmd = 'python ~/box/map_barcodes.py %s %s %s > %s' %(self.ci[i], self.b, self.x, self.Ci[i])
+            cmd = 'python ~/box/map_barcodes.py %s %s %s %d > %s' %(self.ci[i], self.b, self.x, self.b_mismatch, self.Ci[i])
             cmds.append(cmd)
         ssub.submit_and_wait(cmds, self.z)
         ssub.validate_output(self.Ci, self.z)
