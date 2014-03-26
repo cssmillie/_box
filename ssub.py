@@ -72,7 +72,7 @@ class Ssub():
         self.cluster = cluster
         self.username = username
         self.temp_dir = temp_dir
-        self.header = '#!/bin/bash\nsource ~/.bashrc\necho MAX_JOB_ARRAY_SIZE' %(username)
+        self.header = '#!/bin/bash\nsource ~/.bashrc\necho MAX_JOB_ARRAY_SIZE'
         self.n = args.n
         self.m = args.m
         self.q = args.q

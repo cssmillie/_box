@@ -45,10 +45,11 @@ def parse_args():
     
     # add command line arguments
     parser = argparse.ArgumentParser(usage = usage)
-    parser.add_argument('-n', default = 100, type = int, help = 'number of cpus')
+    parser.add_argument('-n', default = -1, type = int, help = 'number of cpus')
     parser.add_argument('-q', default = 'hour', help = 'queue')
     parser.add_argument('-G', default = 'gscidfolk', help = 'group')
     parser.add_argument('-m', default = 4, help = 'memory (gb)')
+    parser.add_argument('-l', default = 200, help = 'job array slot limit')
     parser.add_argument('--io', default = 1, help = 'disk io (units)')
     parser.add_argument('commands', nargs = '?', default = '')
     
@@ -71,7 +72,7 @@ class Ssub():
         self.cluster = cluster
         self.username = username
         self.temp_dir = temp_dir
-        self.header = '#!/bin/bash\nsource /home/unix/%s/.bashrc\n' %(username)
+        self.header = '#!/bin/bash\nsource ~/.bashrc\necho MAX_JOB_ARRAY_SIZE' %(username)
         self.n = args.n
         self.m = args.m
         self.q = args.q
@@ -176,7 +177,7 @@ class Ssub():
         array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#BSUB -J "job[1-%d]"\n' %(len(fns)))
+        fh.write('#BSUB -J "job[1-%d]%%d"\n' %(len(fns), self.l))
         fh.write('#BSUB -e %s.e.%%I\n' %(array_fn))
         fh.write('#BSUB -o %s.o.%%I\n' %(array_fn))
         fh.write('#BSUB -q %s\n' %(self.q))
