@@ -356,4 +356,4 @@ def initialize():
 ssub, commands = initialize()
 
 if __name__ == '__main__':
-    ssub.submit_array(commands)
+    ssub.submit(commands)
