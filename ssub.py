@@ -163,7 +163,12 @@ class Ssub():
         # submit jobs to the cluster
         job_ids = []
         for fn in fns:
-            process = subprocess.Popen(['%s < %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            if self.cluster == 'broad':
+                process = subprocess.Popen(['%s < %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            elif self.cluster == 'coyote':
+                process = subprocess.Popen(['%s %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            else:
+                quit()
             [out, error] = process.communicate()
             job_ids.append(self.parse_job(out))
             message('Submitting job %s' %(fn))
@@ -208,7 +213,7 @@ class Ssub():
         array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#PBS -t 1-%d%%%s\n' %(len(fns), self.l))
+        fh.write('#PBS -t 1-%d%%%s\n' %(len(fns), min(len(fns), int(self.l))))
         fh.write('#PBS -e %s.e\n' %(array_fn))
         fh.write('#PBS -o %s.o\n' %(array_fn))
         fh.write('#PBS -q %s\n' %(self.q))
