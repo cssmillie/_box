@@ -72,7 +72,7 @@ class Ssub():
         self.cluster = cluster
         self.username = username
         self.temp_dir = temp_dir
-        self.header = '#!/bin/bash\nsource ~/.bashrc\n'
+        self.header = '#!/bin/bash\n'
         self.l = args.l
         self.n = args.n
         self.m = args.m
@@ -190,6 +190,7 @@ class Ssub():
         fh.write('#BSUB -G %s\n' %(self.G))
         fh.write('#BSUB -R "rusage[mem=%s:argon_io=%s]"\n' %(self.m, self.io))
         fh.write('#BSUB -P %s\n' %(array_fn))
+        fh.write('source /home/unix/%s/.bashrc\n' %(self.username))
         fh.write('cd $LS_SUBCWD\n')
         
         # write job array
@@ -216,8 +217,7 @@ class Ssub():
         fh.write('#PBS -t 1-%d%%%s\n' %(len(fns), min(len(fns), int(self.l))))
         fh.write('#PBS -e %s.e\n' %(array_fn))
         fh.write('#PBS -o %s.o\n' %(array_fn))
-        fh.write('#PBS -q %s\n' %(self.q))
-        fh.write('#PBS -l pmem=%sgb\n' %(self.m))
+        fh.write('source /home/%s/.bashrc\n' %(self.username))
         fh.write('cd $PBS_O_WORKDIR\n')
         
         # write job array

@@ -62,7 +62,7 @@ class OTU_Caller():
     def __init__(self):
         # initialize variables
         self.usearch = 'usearch'
-        self.ggdb = '~/db/gg_otus_4feb2011'
+        self.ggdb = '/net/radiodurans/alm/lab/db/gg_13_5/gg_13_8_otus/rep_set'
         # copy command line arguments
         self.__dict__.update(parse_args().__dict__)
         # create filenames
@@ -72,8 +72,10 @@ class OTU_Caller():
     def get_filenames(self):
         
         # Generate filenames to use in pipeline
-        f_base = os.path.basename(self.f)
-        r_base = os.path.basename(self.r)
+        if self.f:
+            f_base = os.path.basename(self.f)
+        if self.r:
+            r_base = os.path.basename(self.r)
         self.fi = ['%s.%d' %(self.f, i) for i in range(self.n)] # forward reads (split)
         self.ri = ['%s.%d' %(self.r, i) for i in range(self.n)] # reverse reads (split)
         self.mi = ['%s.%d.merge' %(self.f, i) for i in range(self.n)] # merged reads (split)
@@ -91,7 +93,7 @@ class OTU_Caller():
         if self.denovo == True:
             self.db = self.oi
         elif self.ref_gg == True:
-            self.db = ['%s/rep_set/gg_%d_otus_4feb2011.fasta' %(self.ggdb, sid) for sid in self.sids]
+            self.db = ['%s/%d_otus.fasta' %(self.ggdb, sid) for sid in self.sids]
     
     
     def split_fastq(self):
