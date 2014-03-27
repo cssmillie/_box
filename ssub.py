@@ -33,7 +33,7 @@ to create and run pipelines:
 
 # set global variables
 username = 'csmillie'
-temp_dir = '~/tmp'
+temp_dir = '/home/csmillie/tmp'
 cluster = 'coyote'
 
 
@@ -63,7 +63,7 @@ def parse_args():
 
 class Ssub():
     
-    def __init__(self, cluster = 'broad'):
+    def __init__(self, cluster = 'coyote'):
         
         # get command line arguments
         args = parse_args()
@@ -72,7 +72,7 @@ class Ssub():
         self.cluster = cluster
         self.username = username
         self.temp_dir = temp_dir
-        self.header = '#!/bin/bash\nsource ~/.bashrc\necho MAX_JOB_ARRAY_SIZE'
+        self.header = '#!/bin/bash\nsource ~/.bashrc\n'
         self.n = args.n
         self.m = args.m
         self.q = args.q
@@ -90,7 +90,7 @@ class Ssub():
         elif cluster == 'coyote':
             self.submit_cmd = 'qsub'
             self.stat_cmd = 'qstat -l'
-            self.parse_job = lambda x: out.rstrip()
+            self.parse_job = lambda x: x.rstrip()
         
         # unrecognized cluster
         else:
@@ -177,7 +177,7 @@ class Ssub():
         array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#BSUB -J "job[1-%d]%%d"\n' %(len(fns), self.l))
+        fh.write('#BSUB -J "job[1-%d]%%%s"\n' %(len(fns), self.l))
         fh.write('#BSUB -e %s.e.%%I\n' %(array_fn))
         fh.write('#BSUB -o %s.o.%%I\n' %(array_fn))
         fh.write('#BSUB -q %s\n' %(self.q))
@@ -204,10 +204,10 @@ class Ssub():
         
         # initialize output file
         fh, array_fn = self.mktemp(suffix='.sh')
-        array_fn = os.path.abspath(fn)
+        array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#PBS -t 1-%d\n' %(len(fns)))
+        fh.write('#PBS -t 1-%d%%%s\n' %(len(fns), self.l))
         fh.write('#PBS -e %s.e\n' %(array_fn))
         fh.write('#PBS -o %s.o\n' %(array_fn))
         fh.write('#PBS -q %s\n' %(self.q))
