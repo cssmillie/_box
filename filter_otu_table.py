@@ -14,8 +14,8 @@ def parse_args():
     parser.add_argument('--pseudocount', default = np.nan, type = float, help = 'add pseudocount')
     parser.add_argument('--norm', default = False, action = 'store_true', help = 'normalize')
     parser.add_argument('--log', default = False, action = 'store_true', help = 'log transform')
-    parser.add_argument('--locut', default = np.nan, type = float, help = 'minimum abundance (use with max_locut)')
-    parser.add_argument('--hicut', default = np.nan, type = float, help = 'maximum abundance (use with max_hicut)')
+    parser.add_argument('--locut', default = np.nan, type = float, help = 'lo abundance cutoff (use with max_locut)')
+    parser.add_argument('--hicut', default = np.nan, type = float, help = 'hi abundance cutoff (use with max_hicut)')
     parser.add_argument('--max_locut', default = np.nan, type = float, help = 'remove otu if (fraction below locut) > max_locut')
     parser.add_argument('--max_hicut', default = np.nan, type = float, help = 'remove otu if (fraction above hicut) > max_hicut')
     parser.add_argument('--min_med', default = np.nan, type = float, help = 'min_med < median < max_med')
@@ -31,7 +31,7 @@ def fmessage(data, text):
 
 def filter_otu_table(args, data):
     # filter otu table
-    
+
     # filter by regex
     if args.row_regex:
         data = data.ix[[bool(re.search(args.row_regex, ri)) for ri in data.index], :]
@@ -40,48 +40,55 @@ def filter_otu_table(args, data):
     # transpose
     if args.transpose:
         data = data.transpose()
-        fmessage('--transpose: transposing otu table')
+        fmessage(data, '--transpose: transposing otu table')
+    print data
     # add pseudocount
-    if args.pseudocount:
+    if pd.notnull(args.pseudocount):
         data = data + args.pseudocount
-        fmessage('--pseudocount: adding %f to otu table' %(args.pseudocount))
+        fmessage(data, '--pseudocount: adding %f to otu table' %(args.pseudocount))
     # normalize
     if args.norm:
         data = data.div(data.sum(axis=1), axis=0)
-        fmessage('--norm: normalizing rows of otu table')
+        fmessage(data, '--norm: normalizing rows of otu table')
     # log transform
     if args.log:
+        if pd.isnull(args.pseudocount):
+            data = data + 1e-10
         data = np.log(data)
-        fmessage('--log: applying log transform')
+        fmessage(data, '--log: applying log transform')
     # filter by f <= locut
-    if args.locut and args.max_locut:
+    if pd.notnull(args.locut) and pd.notnull(args.max_locut):
+        if args.max_locut > 1:
+            args.max_locut = 1.*args.max_locut/len(data.index)
         data = data.ix[:, (1.*(data <= args.locut).sum(axis=0) / len(data.index)) < args.max_locut]
-        fmessage('--locut %f --max_locut %f: filtering by minimum abundance' %(args.locut, args.max_locut))
+        fmessage(data, '--locut %f --max_locut %f: filtering by minimum abundance' %(args.locut, args.max_locut))
     # filter by f >= hicut
-    if args.hicut and args.max_hicut:
+    if pd.notnull(args.hicut) and pd.notnull(args.max_hicut):
+        if args.max_hicut > 1:
+            args.max_hicut = 1.*args.max_hicut/len(data.index)
         data = data.ix[:, (1.*(data >= args.hicut).sum(axis=0) / len(data.index)) < args.max_hicut]
-        fmessage('--hicut %f --max_hicut %f: filtering by maximum abundance' %(args.hicut, args.max_hicut))
+        fmessage(data, '--hicut %f --max_hicut %f: filtering by maximum abundance' %(args.hicut, args.max_hicut))
     # filter by median
-    if args.min_med:
+    if pd.notnull(args.min_med):
         data = data.ix[:, data.median(axis=0) >= args.min_med]
-        fmessage('--min_med %f: filtering by median abundance' %(args.min_med))
-    if args.max_med:
+        fmessage(data, '--min_med %f: filtering by median abundance' %(args.min_med))
+    if pd.notnull(args.max_med):
         data = data.ix[:, data.median(axis=0) <= args.max_med]
-        fmessage('--max_med %f: filtering by maximum abundance' %(args.max_med))
+        fmessage(data, '--max_med %f: filtering by maximum abundance' %(args.max_med))
     # select most abundant otus
-    if args.top:
+    if pd.notnull(args.top):
         if args.top < 1:
             data = data.ix[:, data.median(axis=0).order(ascending=False)[:int(args.top*len(data.index))].index]
-            fmessage('--args.top %f: selecting top %f otus' %(args.top))
+            fmessage(data, '--args.top %f: selecting top %f otus' %(args.top))
         elif args.top > 1:
             data = data.ix[:, data.median(axis=0).order(ascending=False)[:int(args.top)].index]
-            fmessage('--args.top %d: selecting top %d otus' %(args.top))
+            fmessage(data, '--args.top %d: selecting top %d otus' %(args.top))
     return data
 
 
 def write_output(args, data):
     # write table as tab-delimited file
-    data.to_csv(args.i, sep='\t')
+    data.to_csv(args.o, sep='\t')
 
 
 args = parse_args()
@@ -89,6 +96,6 @@ args = parse_args()
 if __name__ == '__main__':
     # load input as pandas dataframe
     data = read_dataframe(args.i)
-    fmessage('loading %s as dataframe' %(args.i))
+    fmessage(data, 'loading %s as dataframe' %(args.i))
     data = filter_otu_table(args, data)
-    write_output(data, args.o)
+    write_output(args, data)
