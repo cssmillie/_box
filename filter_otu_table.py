@@ -16,10 +16,12 @@ def parse_args():
     parser.add_argument('--log', default = False, action = 'store_true', help = 'log transform')
     parser.add_argument('--locut', default = np.nan, type = float, help = 'lo abundance cutoff (use with max_locut)')
     parser.add_argument('--hicut', default = np.nan, type = float, help = 'hi abundance cutoff (use with max_hicut)')
-    parser.add_argument('--max_locut', default = np.nan, type = float, help = 'remove otu if (fraction below locut) > max_locut')
-    parser.add_argument('--max_hicut', default = np.nan, type = float, help = 'remove otu if (fraction above hicut) > max_hicut')
+    parser.add_argument('--max_below_locut', default = np.nan, type = float, help = 'remove otu if (fraction below locut) > max_below_locut')
+    parser.add_argument('--min_above_locut', default = np.nan, type = float, help = 'remove otu if (fraction above locut) < min_above_locut')
+    parser.add_argument('--max_above_hicut', default = np.nan, type = float, help = 'remove otu if (fraction above hicut) > max_above_hicut')
     parser.add_argument('--min_med', default = np.nan, type = float, help = 'min_med < median < max_med')
     parser.add_argument('--max_med', default = np.nan, type = float, help = 'min_med < median < max_med')
+    parser.add_argument('--min_nonzero', default=np.nan, type=float, help = 'remove otu if num(nonzero) < min_nonzero')
     parser.add_argument('--top', default = np.nan, type = float, help = 'select most abundant otus (fraction or int)')
     args = parser.parse_args()
     return args
@@ -57,17 +59,23 @@ def filter_otu_table(args, data):
         data = np.log(data)
         fmessage(data, '--log: applying log transform')
     # filter by f <= locut
-    if pd.notnull(args.locut) and pd.notnull(args.max_locut):
-        if args.max_locut > 1:
-            args.max_locut = 1.*args.max_locut/len(data.index)
-        data = data.ix[:, (1.*(data <= args.locut).sum(axis=0) / len(data.index)) < args.max_locut]
-        fmessage(data, '--locut %f --max_locut %f: filtering by minimum abundance' %(args.locut, args.max_locut))
+    if pd.notnull(args.locut) and pd.notnull(args.max_below_locut):
+        if args.max_below_locut > 1:
+            args.max_below_locut = 1.*args.max_below_locut/len(data.index)
+        data = data.ix[:, (1.*(data <= args.locut).sum(axis=0) / len(data.index)) < args.max_below_locut]
+        fmessage(data, '--locut %f --max_below_locut %f: filtering by minimum abundance' %(args.locut, args.max_below_locut))
+    # filter by f >= locut
+    if pd.notnull(args.locut) and pd.notnull(args.min_above_locut):
+        if args.min_above_locut > 1:
+            args.min_above_locut = 1.*args.min_above_locut/len(data.index)
+        data = data.ix[:, (1.*(data >= args.locut).sum(axis=0) / len(data.index)) > args.min_above_locut]
+        fmessage(data, '--locut %f --min_above_locut %f: filtering by minimum abundance' %(args.locut, args.min_above_locut))
     # filter by f >= hicut
-    if pd.notnull(args.hicut) and pd.notnull(args.max_hicut):
-        if args.max_hicut > 1:
-            args.max_hicut = 1.*args.max_hicut/len(data.index)
-        data = data.ix[:, (1.*(data >= args.hicut).sum(axis=0) / len(data.index)) < args.max_hicut]
-        fmessage(data, '--hicut %f --max_hicut %f: filtering by maximum abundance' %(args.hicut, args.max_hicut))
+    if pd.notnull(args.hicut) and pd.notnull(args.max_above_hicut):
+        if args.max_above_hicut > 1:
+            args.max_above_hicut = 1.*args.max_above_hicut/len(data.index)
+        data = data.ix[:, (1.*(data >= args.hicut).sum(axis=0) / len(data.index)) < args.max_above_hicut]
+        fmessage(data, '--hicut %f --max_above_hicut %f: filtering by maximum abundance' %(args.hicut, args.max_above_hicut))
     # filter by median
     if pd.notnull(args.min_med):
         data = data.ix[:, data.median(axis=0) >= args.min_med]
