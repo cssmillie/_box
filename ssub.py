@@ -33,7 +33,7 @@ to create and run pipelines:
 
 # set global variables
 username = 'csmillie'
-temp_dir = '~/tmp'
+temp_dir = '/home/csmillie/tmp'
 cluster = 'coyote'
 
 
@@ -63,7 +63,7 @@ def parse_args():
 
 class Ssub():
     
-    def __init__(self, cluster = 'broad'):
+    def __init__(self, cluster = 'coyote'):
         
         # get command line arguments
         args = parse_args()
@@ -72,7 +72,8 @@ class Ssub():
         self.cluster = cluster
         self.username = username
         self.temp_dir = temp_dir
-        self.header = '#!/bin/bash\nsource ~/.bashrc\necho MAX_JOB_ARRAY_SIZE'
+        self.header = '#!/bin/bash\n'
+        self.l = args.l
         self.n = args.n
         self.m = args.m
         self.q = args.q
@@ -90,7 +91,7 @@ class Ssub():
         elif cluster == 'coyote':
             self.submit_cmd = 'qsub'
             self.stat_cmd = 'qstat -l'
-            self.parse_job = lambda x: out.rstrip()
+            self.parse_job = lambda x: x.rstrip()
         
         # unrecognized cluster
         else:
@@ -162,7 +163,12 @@ class Ssub():
         # submit jobs to the cluster
         job_ids = []
         for fn in fns:
-            process = subprocess.Popen(['%s < %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            if self.cluster == 'broad':
+                process = subprocess.Popen(['%s < %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            elif self.cluster == 'coyote':
+                process = subprocess.Popen(['%s %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
+            else:
+                quit()
             [out, error] = process.communicate()
             job_ids.append(self.parse_job(out))
             message('Submitting job %s' %(fn))
@@ -177,13 +183,14 @@ class Ssub():
         array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#BSUB -J "job[1-%d]%%d"\n' %(len(fns), self.l))
+        fh.write('#BSUB -J "job[1-%d]%%%s"\n' %(len(fns), self.l))
         fh.write('#BSUB -e %s.e.%%I\n' %(array_fn))
         fh.write('#BSUB -o %s.o.%%I\n' %(array_fn))
         fh.write('#BSUB -q %s\n' %(self.q))
         fh.write('#BSUB -G %s\n' %(self.G))
         fh.write('#BSUB -R "rusage[mem=%s:argon_io=%s]"\n' %(self.m, self.io))
         fh.write('#BSUB -P %s\n' %(array_fn))
+        fh.write('source /home/unix/%s/.bashrc\n' %(self.username))
         fh.write('cd $LS_SUBCWD\n')
         
         # write job array
@@ -204,14 +211,13 @@ class Ssub():
         
         # initialize output file
         fh, array_fn = self.mktemp(suffix='.sh')
-        array_fn = os.path.abspath(fn)
+        array_fn = os.path.abspath(array_fn)
         
         # write header
-        fh.write('#PBS -t 1-%d\n' %(len(fns)))
+        fh.write('#PBS -t 1-%d%%%s\n' %(len(fns), min(len(fns), int(self.l))))
         fh.write('#PBS -e %s.e\n' %(array_fn))
         fh.write('#PBS -o %s.o\n' %(array_fn))
-        fh.write('#PBS -q %s\n' %(self.q))
-        fh.write('#PBS -l pmem=%sgb\n' %(self.m))
+        fh.write('source /home/%s/.bashrc\n' %(self.username))
         fh.write('cd $PBS_O_WORKDIR\n')
         
         # write job array
