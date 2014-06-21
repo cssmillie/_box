@@ -70,7 +70,7 @@ def iter_fsq(fn):
 def read_fst(fn, reverse=False):
     # read fasta file as dictionary
     fst = {}
-    for [sid, seq] in iterfst(fst):
+    for [sid, seq] in iter_fst(fst):
         if reverse == False:
             fst[sid] = seq
         elif reverse == True:

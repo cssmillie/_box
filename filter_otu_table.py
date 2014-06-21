@@ -21,8 +21,9 @@ def parse_args():
     parser.add_argument('--max_above_hicut', default = np.nan, type = float, help = 'remove otu if (fraction above hicut) > max_above_hicut')
     parser.add_argument('--min_med', default = np.nan, type = float, help = 'min_med < median < max_med')
     parser.add_argument('--max_med', default = np.nan, type = float, help = 'min_med < median < max_med')
-    parser.add_argument('--min_nonzero', default=np.nan, type=float, help = 'remove otu if num(nonzero) < min_nonzero')
+    parser.add_argument('--min_total', default = np.nan, type = float, help = 'remove otu if (total) < min_total')
     parser.add_argument('--top', default = np.nan, type = float, help = 'select most abundant otus (fraction or int)')
+    parser.add_argument('--sort', default = False, action = 'store_true', help = 'numeric sort by first column')
     args = parser.parse_args()
     return args
 
@@ -43,7 +44,6 @@ def filter_otu_table(args, data):
     if args.transpose:
         data = data.transpose()
         fmessage(data, '--transpose: transposing otu table')
-    print data
     # add pseudocount
     if pd.notnull(args.pseudocount):
         data = data + args.pseudocount
@@ -64,11 +64,11 @@ def filter_otu_table(args, data):
             args.max_below_locut = 1.*args.max_below_locut/len(data.index)
         data = data.ix[:, (1.*(data <= args.locut).sum(axis=0) / len(data.index)) < args.max_below_locut]
         fmessage(data, '--locut %f --max_below_locut %f: filtering by minimum abundance' %(args.locut, args.max_below_locut))
-    # filter by f >= locut
+    # filter by f > locut
     if pd.notnull(args.locut) and pd.notnull(args.min_above_locut):
         if args.min_above_locut > 1:
             args.min_above_locut = 1.*args.min_above_locut/len(data.index)
-        data = data.ix[:, (1.*(data >= args.locut).sum(axis=0) / len(data.index)) > args.min_above_locut]
+        data = data.ix[:, (1.*(data > args.locut).sum(axis=0) / len(data.index)) > args.min_above_locut]
         fmessage(data, '--locut %f --min_above_locut %f: filtering by minimum abundance' %(args.locut, args.min_above_locut))
     # filter by f >= hicut
     if pd.notnull(args.hicut) and pd.notnull(args.max_above_hicut):
@@ -83,6 +83,10 @@ def filter_otu_table(args, data):
     if pd.notnull(args.max_med):
         data = data.ix[:, data.median(axis=0) <= args.max_med]
         fmessage(data, '--max_med %f: filtering by maximum abundance' %(args.max_med))
+    # filter by total
+    if pd.notnull(args.min_total):
+        data = data.ix[:, data.sum(axis=0) >= args.min_total]
+        fmessage(data, '--min_total %f: filtering by total abundance' %(args.min_total))
     # select most abundant otus
     if pd.notnull(args.top):
         if args.top < 1:
@@ -91,6 +95,9 @@ def filter_otu_table(args, data):
         elif args.top > 1:
             data = data.ix[:, data.median(axis=0).order(ascending=False)[:int(args.top)].index]
             fmessage(data, '--args.top %d: selecting top %d otus' %(args.top))
+    if args.sort == True:
+        data.index = data.index.astype(int)
+        data = data.sort_index()
     return data
 
 
@@ -103,7 +110,7 @@ args = parse_args()
 
 if __name__ == '__main__':
     # load input as pandas dataframe
-    data = read_dataframe(args.i)
+    data = 1.*read_dataframe(args.i)
     fmessage(data, 'loading %s as dataframe' %(args.i))
     data = filter_otu_table(args, data)
     write_output(args, data)

@@ -19,8 +19,8 @@ def mismatches(seq, subseq, w):
 
 # Read input arguments
 fasta = sys.argv[1]
-bcode = sys.argv[2] # 
-index = sys.argv[3] # fastq
+bcode = sys.argv[2]
+index = sys.argv[3]
 MAX_BARCODE_DIFFS = int(sys.argv[4])
 
 # Map each barcode to a sample

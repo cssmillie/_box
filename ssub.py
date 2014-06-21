@@ -344,7 +344,7 @@ def initialize():
     
     # parse command line args
     ssub = Ssub()
-    
+
     # get list of commands
     commands = []
     if ssub.commands != '':
