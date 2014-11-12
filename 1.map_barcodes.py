@@ -97,17 +97,19 @@ def mismatches(seq, subseq, w):
 
 def find_best_match(seq, b2s, w, max_diff):
     # Find the sample with the best matching barcode to seq
+    best_i = ''
     best_b = '' # barcode
-    best_d = '' # edit distance
+    best_d = len(seq) # edit distance
     # calculate edit distance to every barcode
     for b in b2s:
-        d = mismatches(seq, b, w)[1] # get edit distance
+        i, d = mismatches(seq, b, w) # get index, edit distance
         if d < best_d:
+            best_i = i
             best_b = b
             best_d = d
     # return sample id of best match
     if best_d <= max_diff:
-        return b2s[B]
+        return best_i, best_d, best_b, b2s[best_b]
     else:
         return ''
 
@@ -132,19 +134,21 @@ def run():
             # extract barcode from the sequence id
             b = extract_barcode_from_id(line)
             # find sample with best matching barcode
-            s = find_best_match(b, b2s, 1, args.d)
+            s = find_best_match(b, b2s, 1, args.d)[-1]
         
         # Case 2: barcodes are in the sequences
         elif args.m2:
             # search sequence for barcode
-            s = find_best_match(seq, b2s, args.w, args.d)
+            i, d, b, s = find_best_match(seq, b2s, args.w, args.d)
+            seq = seq[i+len(b):]
+            
         
         # Case 3: barcodes are in index file
         elif args.m3:
             # get barcode from index file
             b = s2b[sid]
             # find sample with best matching barcode
-            s = find_best_match(b, b2s, 1, args.d)
+            s = find_best_match(b, b2s, 1, args.d)[-1]
         
         # If sample, replace the current seqid with a new seqid
         if s:
