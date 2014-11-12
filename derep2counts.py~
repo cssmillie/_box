@@ -6,6 +6,8 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--map', help='mapping file')
+parser.add_argument('--min_count', help = 'minimum read count')
+parser.add_argument('--min_samples', help='minimum number of samples')
 parser.add_argument('--out', help='output table')
 args = parser.parse_args()
 
@@ -15,7 +17,10 @@ otus = {}
 for line in open(args.map):
     otu, table = line.rstrip().split('\t')
     entries = table.split(' ')
-    if len(entries) < 3:
+    count = sum([int(entry.split(':')[1]) for entry in entries])
+    if len(entries) < args.min_samples:
+        continue
+    if count < args.min_count:
         continue
     if otu not in otus:
         otus[otu] = len(otus)
@@ -23,6 +28,10 @@ for line in open(args.map):
         sample, count = entry.split(':')
         if sample not in samples:
             samples[sample] = len(samples)
+
+print len(otus)
+print len(samples)
+quit()
 
 x = np.zeros([len(samples), len(otus)])
 
@@ -48,4 +57,5 @@ sort_otus = np.array(sort_otus)[keep]
 out = open(args.out, 'w')
 out.write( 'sample\t' + '\t'.join(sort_otus) + '\n')
 for sample in sort_samp:
+    i = samples[sample]
     out.write( '%s\t%s' %(sample, '\t'.join(['%d' %(xi) for xi in x.ix[i,:]])) + '\n')
