@@ -94,8 +94,11 @@ class timer():
         return self
     def next(self):
         self.t.append(time.time())
-        return self.t[-1] - self.t.pop(0)
-
+        return self.t[-1] - self.t[-2]
+    def mean(self):
+        return np.mean(self.t)
+    def median(self):
+        return np.median(self.t)
 
 def reverse_complement(x):
     return x[::-1].translate(rctab)
