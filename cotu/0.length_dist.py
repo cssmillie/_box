@@ -1,3 +1,5 @@
+# Print read length percentiles (Min, 5%, 10%, 15%, 20%, 25%, Max)
+
 import argparse, util
 import numpy as np
 

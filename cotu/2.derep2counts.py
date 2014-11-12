@@ -1,13 +1,13 @@
+# Convert a derep mapping file to an OTU table
+
 import pandas as pd
 import argparse
 import numpy as np
 
-# Convert a derep mapping file to an OTU table
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--map', help='mapping file')
-parser.add_argument('--min_count', help = 'minimum read count', type = int)
-parser.add_argument('--min_samples', help='minimum number of samples', type = int)
+parser.add_argument('--min_count', help='minimum read count', type=int)
+parser.add_argument('--min_samples', help='minimum number of samples', type=int)
 parser.add_argument('--out', help='output table')
 
 args = parser.parse_args()

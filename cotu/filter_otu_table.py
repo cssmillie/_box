@@ -1,3 +1,5 @@
+# Basic script for filtering OTU tables
+
 import argparse
 import pandas as pd
 import numpy as np
@@ -6,24 +8,24 @@ from util import *
 def parse_args():
     # parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', default = '', help = 'input file')
-    parser.add_argument('-o', default = '', help = 'output file')
-    parser.add_argument('--row_regex', default = '', help = 'keep rows that match regex')
-    parser.add_argument('--col_regex', default = '', help = 'keep cols that match regex')
-    parser.add_argument('--transpose', default = False, action = 'store_true', help = 'transpose otu table')
-    parser.add_argument('--pseudocount', default = np.nan, type = float, help = 'add pseudocount')
-    parser.add_argument('--norm', default = False, action = 'store_true', help = 'normalize')
-    parser.add_argument('--log', default = False, action = 'store_true', help = 'log transform')
-    parser.add_argument('--locut', default = np.nan, type = float, help = 'lo abundance cutoff (use with max_locut)')
-    parser.add_argument('--hicut', default = np.nan, type = float, help = 'hi abundance cutoff (use with max_hicut)')
-    parser.add_argument('--max_below_locut', default = np.nan, type = float, help = 'remove otu if (fraction below locut) > max_below_locut')
-    parser.add_argument('--min_above_locut', default = np.nan, type = float, help = 'remove otu if (fraction above locut) < min_above_locut')
-    parser.add_argument('--max_above_hicut', default = np.nan, type = float, help = 'remove otu if (fraction above hicut) > max_above_hicut')
-    parser.add_argument('--min_med', default = np.nan, type = float, help = 'min_med < median < max_med')
-    parser.add_argument('--max_med', default = np.nan, type = float, help = 'min_med < median < max_med')
-    parser.add_argument('--min_total', default = np.nan, type = float, help = 'remove otu if (total) < min_total')
-    parser.add_argument('--top', default = np.nan, type = float, help = 'select most abundant otus (fraction or int)')
-    parser.add_argument('--sort', default = False, action = 'store_true', help = 'numeric sort by first column')
+    parser.add_argument('-i', default='', help='input file')
+    parser.add_argument('-o', default='', help='output file')
+    parser.add_argument('--row_regex', default='', help='keep rows that match regex')
+    parser.add_argument('--col_regex', default='', help='keep cols that match regex')
+    parser.add_argument('--transpose', default=False, action='store_true', help='transpose otu table')
+    parser.add_argument('--pseudocount', default=np.nan, type=float, help='add pseudocount')
+    parser.add_argument('--norm', default=False, action='store_true', help='normalize')
+    parser.add_argument('--log', default=False, action='store_true', help='log transform')
+    parser.add_argument('-a', default=np.nan, type=float, help='lower threshold')
+    parser.add_argument('-b', default=np.nan, type=float, help='upper threshold')
+    parser.add_argument('--max_below_a', default=np.nan, type=float, help='max number of samples for which otu abundance < a')
+    parser.add_argument('--min_above_a', default=np.nan, type=float, help='min number of samples for which otu abundance > a')
+    parser.add_argument('--max_above_b', default=np.nan, type=float, help='max number of samples for which otu abundance > b')
+    parser.add_argument('--min_median', default=np.nan, type=float, help='min_median < median < max_median')
+    parser.add_argument('--max_median', default=np.nan, type=float, help='min_med < median < max_med')
+    parser.add_argument('--min_total', default=np.nan, type=float, help='remove otu if (total abundance) < min_total')
+    parser.add_argument('--top', default=np.nan, type=float, help='select most abundant otus (fraction or int)')
+    parser.add_argument('--sort', default=False, action='store_true', help='numeric sort by first column')
     args = parser.parse_args()
     return args
 
