@@ -1,9 +1,10 @@
 library(data.table)
+library(zoo)
 
 read_tseries = function(fn, std=TRUE){
     # Read time series as zoo object
     x = fread(fn, sep='\t', header=TRUE)
-    x = zoo(x[,-1,with=F], x[,1,with=F])
+    x = zoo(x[,-1,with=F], x[[1]])
     # Standardize if necessary
     if(std == TRUE){
         x = scale(x)
