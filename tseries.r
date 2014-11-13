@@ -2,13 +2,21 @@ library(data.table)
 library(zoo)
 
 read_tseries = function(fn, std=TRUE){
+    
     # Read time series as zoo object
     x = fread(fn, sep='\t', header=TRUE)
     x = zoo(x[,-1,with=F], x[[1]])
+    
+    # Fix zeros @ .5*min
+    x[x < -20] = min(x[x > -20]) + log(.5)
+    
     # Standardize if necessary
     if(std == TRUE){
         x = scale(x)
     }
+    
+    
+    
     # Return zoo object
     return(x)
 }
