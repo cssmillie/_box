@@ -35,5 +35,5 @@ fix_zeros = function(x, method='min'){
         y = as.numeric(x)
         x[x < -20] = log(.5) + min(y[y > -20])
     }
-    return x
+    return(x)
 }
