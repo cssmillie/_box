@@ -18,7 +18,7 @@ fit_arima = function(x){
     require(forecast)
     # Fit ARIMA model to each column of x
     y = as.data.frame(apply(x, 2, function(a) fitted(auto.arima(a))[-1]))
-    z = list(fitted=y, residuals=y-x[1:(length(x)-1),])
+    z = list(fitted = y, residuals = x[1:(nrow(x)-1),]-y)
     return(z)
 }
 
