@@ -5,7 +5,7 @@ read_tseries = function(fn, std=TRUE){
     
     # Read time series as zoo object
     x = fread(fn, sep='\t', header=TRUE)
-    x = zoo(x[,-1,with=F], x[[1]])
+    #x = zoo(x[,-1,with=F], x[[1]])
     
     # Fix zeros @ .5*min
     #x = fix_zeros(x, method='min')
