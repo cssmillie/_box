@@ -8,7 +8,7 @@ read_tseries = function(fn, std=TRUE){
     x = zoo(x[,-1,with=F], x[[1]])
     
     # Fix zeros @ .5*min
-    x[x < -20] = min(x[x > -20]) + log(.5)
+    x = fix_zeros(x, method='min')
     
     # Standardize if necessary
     if(std == TRUE){
@@ -28,4 +28,12 @@ fit_arima = function(x){
     # Get residuals
     z = x - y
     return(list(fitted=y, residuals=z))
+}
+
+fix_zeros = function(x, method='min'){
+    if(method == 'min'){
+        y = as.numeric(x)
+        x[x < -20] = log(.5)*min(y[y > -20])
+    }
+    return x
 }
