@@ -33,7 +33,7 @@ fit_arima = function(x){
 fix_zeros = function(x, method='min'){
     if(method == 'min'){
         y = as.numeric(x)
-        x[x < -20] = log(.5)*min(y[y > -20])
+        x[x < -20] = log(.5) + min(y[y > -20])
     }
     return x
 }
