@@ -3,6 +3,7 @@ read_tseries = function(fn, std=TRUE){
     # Read time series as zoo object
     x = fread(fn, sep='\t', header=TRUE)
     x = data.frame(x[,-1,with=FALSE], row.names=x[[1]])
+    as.matrix(x)
     # Fix zeros @ .5*min
     x = fix_zeros(x, method='min')
     # Standardize if necessary
@@ -30,7 +31,7 @@ fit_arima = function(x){
 fix_zeros = function(x, method='min'){
     if(method == 'min'){
         x = as.matrix(x)
-        x[x < -20] = log(.5) + min(y[y > -20])
+        x[x < -20] = log(.5) + min(x[x > -20])
         x = as.data.frame(x)
     }
     return(x)
