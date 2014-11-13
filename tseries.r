@@ -16,10 +16,15 @@ read_tseries = function(fn, std=TRUE){
 fit_arima = function(x){
     require(forecast)
     # Fit ARIMA model to each column of x
-    y = as.data.frame(apply(x, 2, function(xi) fitted(auto.arima(xi))[-1]))
+    y = apply(x, 2, function(a) auto.arima(a))
+    z = list()
+    z$fitted = sapply(y, function(a) fitted(a)[-1])
+    z$residuals = sapply(y, function(a) a$residuals)
+
+    #y = as.data.frame(apply(x, 2, function(xi) fitted(auto.arima(xi))[-1]))
     # Get residuals
-    z = x - y
-    return(list(fitted=y, residuals=z))
+    #z = x - y
+    #return(list(fitted=y, residuals=z))
 }
 
 fix_zeros = function(x, method='min'){
