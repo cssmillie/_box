@@ -8,7 +8,7 @@ read_tseries = function(fn, std=TRUE){
     x = zoo(x[,-1,with=F], x[[1]])
     
     # Fix zeros @ .5*min
-    x = fix_zeros(x, method='min')
+    #x = fix_zeros(x, method='min')
     
     # Standardize if necessary
     if(std == TRUE){
