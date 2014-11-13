@@ -24,7 +24,7 @@ fit_arima = function(x){
 
 fix_zeros = function(x, method='min'){
     if(method == 'min'){
-        x = as.data.frame(apply(x, 2, function(a){a[a < -20] = min(a[a > -20])); a}))
+        x = as.data.frame(apply(x, 2, function(a){a[a < -20] = min(a[a > -20]); a}))
     }
     return(x)
 }
