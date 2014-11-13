@@ -19,8 +19,9 @@ fit_arima = function(x){
     # Fit ARIMA model to each column of x
     y = apply(x, 2, function(a) auto.arima(a))
     z = list()
-    z$fitted = sapply(y, function(a) fitted(a)[-1])
-    z$residuals = sapply(y, function(a) a$residuals)
+    z$fitted = as.data.frame(sapply(y, function(a) fitted(a)[-1]))
+    z$residuals = as.data.frame(sapply(y, function(a) a$residuals))
+    return(z)
 
     #y = as.data.frame(apply(x, 2, function(xi) fitted(auto.arima(xi))[-1]))
     # Get residuals
