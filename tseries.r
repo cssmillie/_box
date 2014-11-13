@@ -1,23 +1,14 @@
-library(data.table)
-library(zoo)
-
 read_tseries = function(fn, std=TRUE){
-    
+    require(data.table)
     # Read time series as zoo object
     x = fread(fn, sep='\t', header=TRUE)
-    x = data.frame(x[,-1,with=FALSE], rownames=x[[1]])
-    #x = zoo(x[,-1,with=F], x[[1]])
-    
+    x = data.frame(x[,-1,with=FALSE], row.names=x[[1]])
     # Fix zeros @ .5*min
-    #x = fix_zeros(x, method='min')
-    
+    x = fix_zeros(x, method='min')
     # Standardize if necessary
     if(std == TRUE){
         x = scale(x)
     }
-    
-    
-    
     # Return zoo object
     return(x)
 }
@@ -33,8 +24,9 @@ fit_arima = function(x){
 
 fix_zeros = function(x, method='min'){
     if(method == 'min'){
-        y = as.numeric(x)
+        x = as.matrix(x)
         x[x < -20] = log(.5) + min(y[y > -20])
+        x = as.data.frame(x)
     }
     return(x)
 }
