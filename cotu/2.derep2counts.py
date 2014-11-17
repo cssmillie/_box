@@ -5,17 +5,21 @@ import argparse
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--map', help='mapping file')
-parser.add_argument('--min_count', help='minimum read count', type=int)
-parser.add_argument('--min_samples', help='minimum number of samples', type=int)
-parser.add_argument('--out', help='output table')
+parser.add_argument('--map', help='Input mapping file')
+parser.add_argument('--min_count', help='Minimum read count', type=int)
+parser.add_argument('--min_samples', help='Minimum number of samples', type=int)
+parser.add_argument('--out', help='Output counts matrix')
 
+# Parse command line arguments
 args = parser.parse_args()
 
+# Keep track of samples and otus
 samples = {}
 otus = {}
 
+# For every line in the mapping file
 for line in open(args.map):
+    # Load otu name and table of sample counts
     otu, table = line.rstrip().split('\t')
     entries = table.split(' ')
     count = sum([int(entry.split(':')[1]) >= args.min_count for entry in entries])

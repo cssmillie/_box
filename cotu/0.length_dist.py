@@ -4,9 +4,9 @@ import argparse, util
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', help = 'input fasta file', default = '')
-parser.add_argument('-q', help = 'input fastq file', default = '')
-parser.add_argument('-n', help = 'number of sequences', default = 100000, type = int)
+parser.add_argument('-f', help = 'Input FASTA file', default = '')
+parser.add_argument('-q', help = 'Input FASTQ file', default = '')
+parser.add_argument('-n', help = 'Number of sequences to evaluate', default = 100000, type = int)
 args = parser.parse_args()
 
 if args.f != '':
