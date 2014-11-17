@@ -1,4 +1,5 @@
 from bidict import *
+import os.path
 
 class SeqDB():
 	
@@ -11,9 +12,10 @@ class SeqDB():
 	def load(self):
 	    # Load db from file
 	    self.db = bidict({})
-	    for line in open(self.fn):
-	        [sid, seq] = line.rstrip().split()
-	        self.db[int(sid)] = seq
+	    if os.path.exists(self.fn):
+	        for line in open(self.fn):
+	            [sid, seq] = line.rstrip().split()
+	            self.db[int(sid)] = seq
 	    return self
 	
 	
