@@ -6,7 +6,7 @@ class SeqDB():
 	
 	def __init__(self, fn):
 		self.fn = fn
-		self.db = self.load_db()
+		self = self.load_db()
 	
 	
 	def load_db(self):
