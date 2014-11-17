@@ -53,7 +53,7 @@ class SeqDB():
 	        if len(self.db) == 0:
 	            otu = 1
 	        else:
-	            otu = max(self.db.values()) + 1
+	            otu = max(self.db.keys()) + 1
 	    self.db[:seq] = otu
 	    # Return otu name
 	    return otu
