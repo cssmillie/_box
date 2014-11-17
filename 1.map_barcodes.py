@@ -1,31 +1,25 @@
 import argparse, primer, sys, util
 from string import maketrans
 
-# Map FASTQ barcodes to samples
-# input files:
-#    1. FASTQ file (REQUIRED)
-#    2. Barcodes map: tab-delimited map of sample ids -> barcodes (REQUIRED)
-#    3. Index file: map of sequence ids -> barcodes (OPTIONAL)
-# options:
-# 
-
+# Demultiplex FASTA/FASTQ file
 
 def parse_args():
-    # Parse command line arguments and check for consistency
+    # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', default='', help='fastq file', required=True)
-    parser.add_argument('-b', default='', help='barcodes file (map of samples to barcodes)', required=True)
-    parser.add_argument('--bfmt', default='fasta', help='barcodes file format', choices=['fasta', 'tab'])
-    parser.add_argument('-i', default='', help='index file (map of sequence ids to barcodes)')
-    parser.add_argument('--ifmt', default='fasta', help='index file format', choices=['fasta', 'tab'])
-    parser.add_argument('-d', default=0, help='max number of barcode mismatches', type=int)
-    parser.add_argument('--m1', help='mode 1: barcodes in sample ids', action='store_true', default=False)
-    parser.add_argument('--m2', help='mode 2: barcodes in sequences', action='store_true', default=False)
-    parser.add_argument('--m3', help='mode 3: barcodes in index file', action='store_true', default=False)
-    parser.add_argument('--rc', help='reverse complement barcodes?', action='store_true', default=False)
+    parser.add_argument('-f', default='', help='Input FASTQ file')
+    parser.add_argument('-q', default='', help='Input FASTQ file')
+    parser.add_argument('-b', default='', help='Barcodes file (samples -> barcodes)', required=True)
+    parser.add_argument('-B', default='', help='Barcodes file format', choices=['fasta', 'tab'], required=True)
+    parser.add_argument('-i', default='', help='Index file (seqs -> barcodes)')
+    parser.add_argument('-I', default='', help='Index file format', choices=['fasta', 'tab'])
+    parser.add_argument('-d', default=0, help='Max barcode differences')
+    parser.add_argument('--mode', default=1, type=int, help='Barcodes in [1] seqids, [2] seqs, [3] index file', choices=[1,2,3], required=True)
+    parser.add_argument('--rc', default=False, action='store_true', help='Reverse complement barcodes?')
     args = parser.parse_args()
-    if True not in [args.m1, args.m2, args.m3]:
-        quit('Error: must specify search mode --m1, --m2, or --m3')
+    if not args.f and not args.q:
+        quit('Error: must specify FASTA or FASTQ file')
+    if args.i and not args.I:
+        quit('Error: must specify index file format')
     return args
 
 
@@ -36,20 +30,18 @@ def reverse_complement(x):
 
 
 def parse_barcodes_file(map_fn, format='fasta', rc=False):
-    # Map barcodes to samples, taking the reverse complement if necessary
+    # Map barcodes to samples
     b2s = {} # maps barcodes to samples
     # Case 1: barcodes file is FASTA format
     if format == 'fasta':
-        for [sid, seq] in util.iter_fst(map_fn):
+        for [s,b] in util.iter_fst(map_fn):
             if rc == True:
-                seq = reverse_complement(seq)
-            b2s[sid] = seq
+                seq = reverse_complement(s)
+            b2s[b] = s
     # Case 2: barcodes file is tab-delimited
     elif format == 'tab':
         for line in open(bcode_fn):
-            # extract sample, barcode from mapping file
-            s,b = line.rstrip().split()
-            # reverse complement barcode (if necessary)
+            [s,b] = line.rstrip().split()
             if rc == True:
                 b = reverse_complement(b)
             b2s[b] = s
@@ -62,13 +54,13 @@ def parse_index_file(index_fn, format='fasta'):
     s2b = {} # maps sequences to barcodes
     # Case 1: index file is FASTA format
     if format=='fasta':
-        for [sid, seq] in util.iter_fst(index_fn):
-            s2b[sid] = seq
+        for [s,b] in util.iter_fst(index_fn):
+            s2b[s] = b
     # Case 2: index file is tab-delimited
     elif format=='tab':
         for line in open(index_fn):
-            [sid, seq] = line.rstrip().split()
-            s2b[sid] = seq
+            [s,b] = line.rstrip().split()
+            s2b[s] = b
     return s2b
 
 
@@ -116,43 +108,52 @@ def find_best_match(seq, b2s, w, max_diff):
 
 def run():
     # Maps FASTQ sequences to samples by finding the best matching barcodes
-    # creates new sequence ids of the form: sample;count
+    # Create new sequence ids of the form: sample;count
     
-    # initialize variables
+    # Initialize variables
     args = parse_args()
-    b2s = parse_barcodes_file(args.b, format=args.bfmt, rc=args.rc) # barcodes to samples
-    s2b = parse_index_file(args.i, format=args.ifmt) # samples to barcodes
+    b2s = parse_barcodes_file(args.b, format=args.B, rc=args.rc) # barcodes to samples
+    s2b = parse_index_file(args.i, format=args.I) # samples to barcodes
     s2c = {} # samples to counts
     
-    # For every FASTQ record...
-    for record in util.iter_fsq(args.f):
+    # Get FASTA, FASTQ filenames and iterators
+    if args.f:
+        fn = args.f
+        iter_fst = util.iter_fst
+    if args.q:
+        fn = args.q
+        iter_fst = util.iter_fsq
+    
+    # For every record in FASTA/FASTQ file...
+    for record in iter_fst(fn):
         sid = record[0] # id
         seq = record[1] # sequence
         
         # Case 1: barcodes are in the sample IDs
-        if args.m1:
-            # extract barcode from the sequence id
+        if args.mode == 1:
+            # Extract barcode from sequence id
             b = extract_barcode_from_id(line)
-            # find sample with best matching barcode
+            # Find best matching sample
             s = find_best_match(b, b2s, 1, args.d)[-1]
         
         # Case 2: barcodes are in the sequences
-        elif args.m2:
-            # search sequence for barcode
-            i, d, b, s = find_best_match(seq, b2s, args.w, args.d)
+        elif args.mode == 2:
+            # Search sequence for best barcode
+            [i, d, b, s] = find_best_match(seq, b2s, args.w, args.d)
+            # Trim barcode from sequence
             seq = seq[i+len(b):]
             
         
         # Case 3: barcodes are in index file
-        elif args.m3:
-            # get barcode from index file
+        elif args.mode == 3:
+            # Get barcode from index file
             b = s2b[sid]
-            # find sample with best matching barcode
+            # Find best matching sample
             s = find_best_match(b, b2s, 1, args.d)[-1]
         
-        # If sample, replace the current seqid with a new seqid
+        # If sample found, replace seqid with new seqid
         if s:
-            s2c = s2c.get(s, 0) + 1 # increment sample count
+            s2c = s2c.get(s, 0) + 1 # Increment sample count
             new_sid = '@%s;%d' %(s, s2c)
             record[0] = new_sid
             print '\n'.join(record)

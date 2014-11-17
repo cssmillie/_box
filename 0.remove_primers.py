@@ -8,22 +8,23 @@ from util import *
 
 def mismatches(seq, subseq, w):
     # calculate mismatches between seq and subseq with window size w
-    I = 0
-    D = len(seq)
+    best_i = 0
+    best_d = len(seq)
     for i in range(w):
-        d = primer.MatchPrefix(seq[i:], subseq)
-        if d < D:
-            I = i
-            D = d
-    return [I, D]
+        d = primer.MatchPrefix(seq[i:], subseq) # edit distance
+        if d < best_d:
+            best_i = i
+            best_d = d
+    return [best_i, best_d]
 
 
 def parse_args():
     # parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', default = '', help = 'input fasta file')
-    parser.add_argument('-p', default = '', help = 'primer sequence')
-    parser.add_argument('-d', default = 0,  help = 'max primer differences', type = int)
+    parser.add_argument('-i', default='', help='Input FASTA file')
+    parser.add_argument('-q', default='', help='Input FASTQ file')
+    parser.add_argument('-p', default='', help = 'Primer sequence')
+    parser.add_argument('-d', default=0,  help = 'Max primer differences', type = int)
     args = parser.parse_args()
     return args
 

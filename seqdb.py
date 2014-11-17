@@ -90,17 +90,22 @@ class SeqDB():
 			return False
 	
 	
-	def write(self, out_fn=None):
-	    # If outfile not given, overwrite infile
+	def write(self, out_fn=None, overwrite=False):
+	    
+	    # If no outfile, use infile
 	    if out_fn is None:
 	        out_fn = self.fn
-	    # First, write database to tempfile
+	        while overwrite == False and os.path.exists(out_fn):
+	            out_fn += '.bk'
+	    
+	    # Write SeqDB to tempfile
 	    tmp_fn = '%s.tmp' %(out_fn)
-	    out = open(tmp_fn, 'w')
+	    tmp = open(tmp_fn, 'w')
 	    for otu in self.db:
 	        seq = self.db[otu]
-	        out.write('%d\t%s\n' %(otu, seq))
-	    out.close()
+	        tmp.write('%d\t%s\n' %(otu, seq))
+	    tmp.close()
+	    
 	    # Validate and move to final destination
 	    if self.validate(tmp_fn):
 	        cmd = 'mv %s %s' %(tmp_fn, out_fn)
