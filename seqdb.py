@@ -76,8 +76,9 @@ class SeqDB():
 		# Write to tempfile
 		tmp_fn = '%s.tmp' %(out_fn)
 		out = open(tmp_fn, 'w')
-		for [seq, name] in self.db:
-			out.write('%s\t%s\n' %(seq, name))
+		for otu in self.db:
+		    seq = self.db[otu]
+			out.write('%s\t%s\n' %(otu, seq))
 		out.close()
 		# Validate tempfile and move
 		if self.validate(tmp_fn):
