@@ -13,7 +13,6 @@ class SeqDB():
 	def load(self):
 		# Load db from file
 		self.db = bidict({})
-		print self.fn
 		if os.path.exists(self.fn):
 			for line in open(self.fn):
 				[sid, seq] = line.rstrip().split()
@@ -21,11 +20,22 @@ class SeqDB():
 		return self
 	
 	
-	def merge(self, fn, overwrite=False):
+	def add_seq(self, seq):
+	    if seq not in ~self.db:
+	        if len(self.db) == 0:
+	            otu = 1
+	        else:
+	            otu = max(self.db) + 1
+	        self.db[:seq] = otu
+	    return self
+	
+	
+	def merge(self, x, overwrite=False):
 		# Merge with another db
-		x = SeqDB(fn)
+		m = SeqDB()
 		if overwrite == True:
-			self.db.update(x.db)
+		    for seq in ~x.db:
+		        self.add_seq(seq)
 		else:
 			total = len(self.db) + len(x.db)
 			for sid in self.db:
@@ -52,11 +62,7 @@ class SeqDB():
 	        otu = self.db[:seq]
 	    # Otherwise, create new db entry
 	    else:
-	        if len(self.db) == 0:
-	            otu = 1
-	        else:
-	            otu = max(self.db.keys()) + 1
-	    self.db[:seq] = otu
+	        self.add_seq(seq)
 	    # Return otu name
 	    return otu
 	
