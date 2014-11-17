@@ -6,13 +6,13 @@ class SeqDB():
 	
 	def __init__(self, fn):
 		self.fn = fn
-		self.db = {}
-		self = self.load()
+		self.db = self.load_db()
 	
 	
-	def load(self):
-		# Load db from file
+	def load_db(self):
+		# Initialize empty SeqDB
 		self.db = bidict({})
+		# Load existing SeqDB (if exists)
 		if os.path.exists(self.fn):
 			for line in open(self.fn):
 				[sid, seq] = line.rstrip().split()
@@ -21,34 +21,34 @@ class SeqDB():
 	
 	
 	def add_seq(self, seq):
+	    # Add new sequence to SeqDB
 	    if seq not in ~self.db:
+	        # If SeqDB is empty, set OTU = 1
 	        if len(self.db) == 0:
 	            otu = 1
+	        # Otherwise, increment to get next OTU
 	        else:
 	            otu = max(self.db) + 1
 	        self.db[:seq] = otu
-	    return self
+	    return otu
 	
 	
-	def merge(self, x, overwrite=False):
-		# Merge with another db
-		m = SeqDB('')
-		if overwrite == True:
+	def merge_db(self, x, keep=0):
+		# Merge SeqDB with another database
+		# If keep == 0, use ids in self
+		if keep == 0:
 		    for seq in ~x.db:
 		        self.add_seq(seq)
-		else:
-			total = len(self.db) + len(x.db)
-			for sid in self.db:
-				x.db[sid] = self.db[sid]
-			if len(x.db) == total:
-				self.db = x.db
-			else:
-				quit('error: overlap in db1 (%s) and db2 (%s), with overwrite=False')
-		return self
+		    return self
+		# If keep == 0, use ids in x
+		elif keep == 1:
+		    for seq in ~self.db:
+		        x.add_seq(seq)
+		    return x
 	
 	
-	def otu2seq(self, otu):
-		# If otu in db, get seq
+	def get_seq(self, otu):
+		# Get sequence associated with OTU id
 		try:
 			seq = self.db[otu]
 			return seq
@@ -56,17 +56,30 @@ class SeqDB():
 			quit('error: otu "%s "not in database' %(otu))
 	
 	
-	def seq2otu(self, seq):
-	    # If seq in db, get otu name
+	def get_otu(self, seq):
+	    # Get OTU id associated with sequence
+	    # If sequence in SeqDB, get OTU id
 	    if seq in ~self.db:
 	        otu = self.db[:seq]
-	    # Otherwise, create new db entry
+	    # Otherwise, create new SeqDB entry
 	    else:
-	        self.add_seq(seq)
-	    # Return otu name
+	        otu = self.add_seq(seq)
+	    # Return OTU id
 	    return otu
 	
-		
+	
+    def trim_db(self, l, keep_all=False):
+        # Trim sequences in SeqDB to length l
+        for seq in ~self.db:
+            new_seq = seq[:l]
+            self.add_seq(new_seq)
+            # Remove other sequences from SeqDB (unless keep_all==True)
+            if keep_all == False:
+                if len(seq) != l:
+                    del self.db[:seq]
+        return self
+	
+	
 	def validate(self, fn):
 		# Load file as SeqDB
 		x = SeqDB(fn)
@@ -78,16 +91,40 @@ class SeqDB():
 	
 	
 	def write(self, out_fn=None):
+	    # If outfile not given, overwrite infile
 	    if out_fn is None:
 	        out_fn = self.fn
+	    # First, write database to tempfile
 	    tmp_fn = '%s.tmp' %(out_fn)
 	    out = open(tmp_fn, 'w')
 	    for otu in self.db:
 	        seq = self.db[otu]
 	        out.write('%d\t%s\n' %(otu, seq))
 	    out.close()
+	    # Validate and move to final destination
 	    if self.validate(tmp_fn):
 	        cmd = 'mv %s %s' %(tmp_fn, out_fn)
 	        os.system(cmd)
 	    return self
 	
+	
+	def map_to_db(self, x, reverse=False):
+	    # Map OTUs in self to OTUs in another SeqDB
+	    if reverse == False:
+	        m = {}
+	        for seq in ~self.db:
+	            otu1 = self.get_otu(seq)
+	            otu2 = x.get_otu(seq)
+	            m[otu1] = otu2
+	    # Or map OTUs in another SeqDB to self
+	    elif reverse == True:
+	        m = {}
+	        for seq in ~self.x:
+	            otu1 = x.get_otu(seq)
+	            otu2 = self.get_otu(seq)
+	            m[otu1] = otu2
+        # Otherwise, throw error
+        else:
+            quit('error: invalid argument in map_to_db()')
+        return m
+    
