@@ -31,9 +31,9 @@ class SeqDB():
 	        if len(x.db) == total:
 	            self.db = x.db
 	        else:
-                quit('error: overlap in db1 (%s) and db2 (%s), with overwrite=False')
-                
-	
+	            quit('error: overlap in db1 (%s) and db2 (%s), with overwrite=False')
+	    return self
+    
 	
 	def otu2seq(self, otu):
 	    # If otu in db, get seq
