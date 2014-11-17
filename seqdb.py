@@ -67,7 +67,7 @@ class SeqDB():
 	    # Return OTU id
 	    return otu
 	
-	
+		
     def trim_db(self, l, keep_all=False):
         # Trim sequences in SeqDB to length l
         for seq in ~self.db:
