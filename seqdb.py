@@ -45,20 +45,20 @@ class SeqDB():
 	
 	
 	def seq2otu(self, seq):
-		# If seq in db, get db ID
-		if seq in ~self.db:
-			otu = self.db[:seq]
-		# Otherwise, create new db entry
-		else:
-		    if len(self.db) == 0:
-		        otu = 1
-		    else:
-			    otu = max(self.db.values()) + 1
-			self.db[:seq] = otu
-		# Return otu name
-		return otu		
+	    # If seq in db, get otu name
+	    if seq in ~self.db:
+	        otu = self.db[:seq]
+	    # Otherwise, create new db entry
+	    else:
+	        if len(self.db) == 0:
+	            otu = 1
+	        else:
+	            otu = max(self.db.values()) + 1
+	    self.db[:seq] = otu
+	    # Return otu name
+	    return otu
 	
-	
+		
 	def validate(self, fn):
 		# Load file as SeqDB
 		x = SeqDB(fn)
