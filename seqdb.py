@@ -1,5 +1,5 @@
 from bidict import *
-import os.path, os.system
+import os.path, os
 import sys
 
 class SeqDB():
