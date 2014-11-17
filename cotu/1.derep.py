@@ -46,7 +46,7 @@ def write_output(x, map_fn, db_fn, min_size=1, min_samples=1):
     # Write output (database + mapping file)
     # Load SeqDB
     db = seqdb.SeqDB(fn=db_fn)
-    out = open(ofn, 'w')
+    out = open(map_fn, 'w')
     for seq in x:
         if sum(x[seq].values()) < min_size:
             continue
