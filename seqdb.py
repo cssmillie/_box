@@ -59,7 +59,6 @@ class SeqDB():
 	def get_otu(self, seq):
 		# Get OTU id associated with sequence
 		# If sequence in SeqDB, get OTU id
-		print type(self.db)
 		if seq in ~self.db:
 			otu = self.db[:seq]
 		# Otherwise, create new SeqDB entry
