@@ -108,7 +108,7 @@ class SeqDB():
 	    return self
 	
 	
-	def map_to_db(self, x, reverse=False):
+	def map_db(self, x, reverse=False):
 	    # Map OTUs in self to OTUs in another SeqDB
 	    if reverse == False:
 	        m = {}
