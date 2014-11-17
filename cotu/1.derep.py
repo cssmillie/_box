@@ -10,7 +10,7 @@ def parse_args():
     parser.add_argument('-s', help='Sample ID separator', required=True)
     parser.add_argument('-o', help='Output mapping file', required=True)
     parser.add_argument('-d', help='OTU database', default='', required=True)
-    parser.add_argument('-M', help='Min size', default=10, type=int)
+    parser.add_argument('-M', help='Min count', default=10, type=int)
     parser.add_argument('-S', help='Min samples', default=3, type=int)
     parser.add_argument('-l', help='Trim length', type=int, default=0)
     args = parser.parse_args()
