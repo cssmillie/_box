@@ -61,5 +61,5 @@ def write_output(x, map_fn, db_fn, min_size=1, min_samples=1):
 args = parse_args()
 if args.l == 0:
     args.l = ''
-x = dereplicate(fst=args.f, fsq=args.q, sep=args.s, trim_lenargs.l)
+x = dereplicate(fst=args.f, fsq=args.q, sep=args.s, trim_len=args.l)
 write_output(x, map_fn=args.o, db_fn=args.d, min_size=args.M, min_samples=args.S)
