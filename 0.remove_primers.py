@@ -1,54 +1,96 @@
 import argparse, primer, sys
 from util import *
 
+# Remove primers from sequences
 
-# Look for exact forward matches between primer and fasta sequences
-# Not reverse complement!
+def parse_args():
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', default='', help='Input FASTA file')
+    parser.add_argument('-q', default='', help='Input FASTQ file')
+    parser.add_argument('-p', default='', help='Primer sequence')
+    parser.add_argument('-l', default='', help='Primer list')
+    parser.add_argument('-d', default=1, type=int, help='Max primer differences')
+    parser.add_argument('-w', default=10, type=int, help='Search positions 1-w for primer')
+    args = parser.parse_args()
+    
+    # Check for consistency
+    if args.f and args.q:
+        quit('Error: cannot specify both FASTA and FASTQ file')
+    if args.p and args.l:
+        quit('Error: cannot specify both primer and primer list')
+    
+    return args
 
 
 def mismatches(seq, subseq, w):
-    # calculate mismatches between seq and subseq with window size w
-    best_i = 0
-    best_d = len(seq)
+    # Calculate the number of mismatches between a sequence and a given subsequence
+    # Searches in a sliding window that starts at position 1 and ends at position w
+    best_i = 0 # index (start position)
+    best_d = len(sequence) # edit distance
+    # for every start position
     for i in range(w):
-        d = primer.MatchPrefix(seq[i:], subseq) # edit distance
+        # calculate edit distance to the given subsequence
+        d = primer.MatchPrefix(seq[i,:], subseq)
+        # keep track of the best index and edit distance
         if d < best_d:
             best_i = i
             best_d = d
     return [best_i, best_d]
 
 
-def parse_args():
-    # parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', default='', help='Input FASTA file')
-    parser.add_argument('-q', default='', help='Input FASTQ file')
-    parser.add_argument('-p', default='', help = 'Primer sequence')
-    parser.add_argument('-d', default=0,  help = 'Max primer differences', type = int)
-    args = parser.parse_args()
-    return args
+def find_best_match(seq, primers, w, max_diff):
+    # Find the sample with the best matching barcode
+    best_i = ''
+    best_p = '' # barcode
+    best_d = len(seq) # edit distance
+    # Calculate edit distance to every barcode
+    for p in primers:
+        [i,d] = mismatches(seq, p, w) # index, edit distance
+        if d < best_d:
+            best_i = i
+            best_p = p
+            best_d = d
+    # Return [index, edit distance, barcode, sample id] of best match
+    if best_d <= max_diff:
+        return [best_i, best_d, best_p]
+    else:
+        return ['', '', '']
 
 
-def remove_primers(fst_fn, primer, max_diffs):
-    # remove primers
-    PL = len(primer)
-    k = 0
-    for line in open(fst_fn):
-        line = line.rstrip()
-        k += 1
-        if k%4 == 1:
-            seqid = line[1:]
-        elif k%4 == 2:
-            seq = line
-            I, D = mismatches(seq, primer, 15)
-            if D > max_diffs:
-                seqid = ''
-            else:
-                seq = seq[I+PL:]
-        elif seqid != '' and k%4 == 0:
-            quals = line[I+PL:]
-            print '@%s\n%s\n+\n%s' %(seqid, seq, quals)
+def run():
+    # Remove primers from FASTA/FASTQ file
+    
+    # Get command line arguments
+    args = parse_args()
+    
+    # Get primer sequences
+    if args.p:
+        primers = [args.p]
+    elif args.l:
+        primers = [line.rstrip() for line in open(args.l)]
+    else:
+        quit('Error: must specify primer or primer list')
+    
+    # Get FASTA/FASTQ iterators
+    if args.f:
+        fn = args.f
+        iter_fst = util.iter_fst
+    elif args.q:
+        fn = args.q
+        iter_fst = util.iter_fsq
+    else:
+        quit('Error: must specify FASTA or FASTQ file')
+    
+    # Iterate through FASTA/FASTQ file
+    for record in iter_fst(fn):
+        seq = record[1]
+        [i,d,p] = find_best_match(seq, primers, args.w, args.d)
+        if i:
+            seq = seq[i+len(p):]
+            record[1] = seq
+            print '\n'.join(record)
 
 
-args = parse_args()
-remove_primers(args.i, args.p, args.d)
+run()

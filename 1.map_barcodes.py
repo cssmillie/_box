@@ -4,6 +4,7 @@ from string import maketrans
 # Demultiplex FASTA/FASTQ file
 
 def parse_args():
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', default='', help='Input FASTQ file')
@@ -13,9 +14,12 @@ def parse_args():
     parser.add_argument('-i', default='', help='Index file (seqs -> barcodes)')
     parser.add_argument('-I', default='', help='Index file format', choices=['fasta', 'tab'])
     parser.add_argument('-d', default=0, help='Max barcode differences')
+    parser.add_argument('-w', default=5, help='Search positions 1-w for barcode')
     parser.add_argument('--mode', default=1, type=int, help='Barcodes in [1] seqids, [2] seqs, [3] index file', choices=[1,2,3], required=True)
     parser.add_argument('--rc', default=False, action='store_true', help='Reverse complement barcodes?')
     args = parser.parse_args()
+    
+    # Check for consistency
     if not args.f and not args.q:
         quit('Error: must specify FASTA or FASTQ file')
     if args.i and not args.I:
@@ -88,22 +92,22 @@ def mismatches(seq, subseq, w):
 
 
 def find_best_match(seq, b2s, w, max_diff):
-    # Find the sample with the best matching barcode to seq
+    # Find the sample with the best matching barcode
     best_i = ''
     best_b = '' # barcode
     best_d = len(seq) # edit distance
-    # calculate edit distance to every barcode
+    # Calculate edit distance to every barcode
     for b in b2s:
-        i, d = mismatches(seq, b, w) # get index, edit distance
+        [i,d] = mismatches(seq, b, w) # index, edit distance
         if d < best_d:
             best_i = i
             best_b = b
             best_d = d
-    # return sample id of best match
+    # Return [index, edit distance, barcode, sample id] of best match
     if best_d <= max_diff:
-        return best_i, best_d, best_b, b2s[best_b]
+        return [best_i, best_d, best_b, b2s[best_b]]
     else:
-        return ''
+        return ['', '', '', '']
 
 
 def run():
@@ -134,14 +138,15 @@ def run():
             # Extract barcode from sequence id
             b = extract_barcode_from_id(line)
             # Find best matching sample
-            s = find_best_match(b, b2s, 1, args.d)[-1]
+            [i,d,b,s] = find_best_match(b, b2s, 1, args.d)
         
         # Case 2: barcodes are in the sequences
         elif args.mode == 2:
             # Search sequence for best barcode
-            [i, d, b, s] = find_best_match(seq, b2s, args.w, args.d)
+            [i,d,b,s] = find_best_match(seq, b2s, args.w, args.d)
             # Trim barcode from sequence
-            seq = seq[i+len(b):]
+            if i:
+                seq = seq[i+len(b):]
             
         
         # Case 3: barcodes are in index file
@@ -149,7 +154,7 @@ def run():
             # Get barcode from index file
             b = s2b[sid]
             # Find best matching sample
-            s = find_best_match(b, b2s, 1, args.d)[-1]
+            [i,d,b,s] = find_best_match(b, b2s, 1, args.d)
         
         # If sample found, replace seqid with new seqid
         if s:
