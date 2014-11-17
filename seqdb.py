@@ -32,7 +32,7 @@ class SeqDB():
 	
 	def merge(self, x, overwrite=False):
 		# Merge with another db
-		m = SeqDB()
+		m = SeqDB('')
 		if overwrite == True:
 		    for seq in ~x.db:
 		        self.add_seq(seq)
