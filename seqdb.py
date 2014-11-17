@@ -1,5 +1,6 @@
 from bidict import *
 import os.path
+import sys
 
 class SeqDB():
 	
@@ -70,19 +71,16 @@ class SeqDB():
 	
 	
 	def write(self, out_fn=None):
-		# If no outfile, overwrite infile
-		if out_fn is None:
-			out_fn = self.fn
-		# Write to tempfile
-		tmp_fn = '%s.tmp' %(out_fn)
-		out = open(tmp_fn, 'w')
+	    if out_fn is None:
+	        out_fn = self.fn
+	    tmp_fn = '%s.tmp' %(out_fn)
+	    out = open(tmp_fn, 'w')
 	    for otu in self.db:
-            seq = self.db[otu]
-            out.write('%s\t%s\n' %(otu, seq))
-		out.close()
-		# Validate tempfile and move
-        if self.validate(tmp_fn):
-            cmd = 'mv %s %s' %(tmp_fn, out_fn)
-            os.system(cmd)
-		return self
+	        seq = self.db[otu]
+	        out.write('%d\t%s\n' %(otu, seq))
+	    out.close()
+	    if self.validate(tmp_fn):
+	        cmd = 'mv %s %s' %(tmp_fn, out_fn)
+	        os.system(cmd)
+	    return self
 	
