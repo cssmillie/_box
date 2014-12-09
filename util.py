@@ -103,4 +103,12 @@ class timer():
 def reverse_complement(x):
     return x[::-1].translate(rctab)
 
-
+def jsd(x,y):
+    x = np.array(x)
+    y = np.array(y)
+    d1 = x*np.log(2*x/(x+y))
+    d2 = y*np.log(2*y/(x+y))
+    d1[np.isnan(d1)] = 0
+    d2[np.isnan(d2)] = 0
+    d = 0.5*sum(d1+d2)
+    return d
