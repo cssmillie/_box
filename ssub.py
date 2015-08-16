@@ -37,7 +37,7 @@ username = 'csmillie'
 cluster = 'broad'
 
 # sun grid engine header
-def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short'):
+def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None):
     h = '''
     #!/bin/bash
     source ~/.bashrc
@@ -48,6 +48,8 @@ def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short'):
     #$ -q %s
     #$ -cwd
     ''' %(n_jobs, max_jobs, outfile, queue)
+    if memory is not None:
+        h += '\n#$ -l m_mem_free=%dg' %(memory)
     h = re.sub('\n\s+', '\n', h)
     return h
 
@@ -76,9 +78,9 @@ def parse_args():
     
     # add command line arguments
     parser = argparse.ArgumentParser(usage = usage)
-    parser.add_argument('-n', default=-1, type=int, help='number of cpus')
+    parser.add_argument('-n', default=250, type=int, help='number of cpus')
     parser.add_argument('-q', default='short', help='queue')
-    parser.add_argument('-m', default=4, help='memory (gb)')
+    parser.add_argument('-m', default=0, type=int help='memory (gb)')
     parser.add_argument('-o', default='error', help='outfile')
     parser.add_argument('commands', nargs='?', default='')
     
@@ -107,18 +109,21 @@ class Submitter():
         self.commands = args.commands
         
         if self.cluster == 'broad':
-            self.header = sge_header
+            self.header = sge_header(n_jobs=len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
             self.submit_cmd = 'qsub'
             self.parse_job = lambda x: re.search('Your job (\d+)').group(1)
             self.stat_cmd = 'qstat'
             self.task_id = '$SGE_TASK_ID'
         
         if self.cluster == 'coyote':
-            self.header = pbs_header
+            self.header = pbs_header(n_jobs=len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
             self.submit_cmd = 'qsub'
             self.parse_job = lambda x: x.rstrip()
             self.stat_cmd = 'qstat -l'
             self.task_id = '$PBS_ARRAYID'
+        
+        if self.m == 0:
+            self.m = None
     
     
     def mktemp(self, prefix='tmp', suffix='.tmp'):
