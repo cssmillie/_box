@@ -184,9 +184,8 @@ class Submitter():
     def submit(self, commands, out=False):
         # submit a job array to the cluster
         if out == False:
-            #fns = self.write_jobs(commands)
             array_fn = self.write_array(commands)
-            #job_ids = self.submit_jobs([array_fn])
+            job_id = self.submit_jobs([array_fn])
             return job_ids
         elif out == True:
             print '\n'.join(commands)
