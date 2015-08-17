@@ -238,7 +238,7 @@ def get_commands():
     if ssub.commands != '':
         commands = [command.strip() for command in ssub.commands.split(';')]
     else:
-        commands = [line.rstrip() for line in sys.stdin.readLines()]    
+        commands = [line.rstrip() for line in sys.stdin.readlines()]    
     return commands
 
 
