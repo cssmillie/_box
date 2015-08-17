@@ -37,36 +37,42 @@ username = 'csmillie'
 cluster = 'broad'
 
 # sun grid engine header
-def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None):
+def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None, array=False):
     h = '''
     #!/bin/bash
     source ~/.bashrc
     source /broad/software/scripts/useuse
-    #$ -t 1-%d
-    #$ -tc %d
-    #$ -j y
-    #$ -o %s
-    #$ -q %s
-    #$ -cwd
-    ''' %(n_jobs, max_jobs, outfile, queue)
-    if memory is not None:
-        h += '\n#$ -l m_mem_free=%dg' %(memory)
+    '''
+    if array == True:
+        h += '''
+        #$ -t 1-%d
+        #$ -tc %d
+        #$ -j y
+        #$ -o %s
+        #$ -q %s
+        #$ -cwd
+        ''' %(n_jobs, max_jobs, outfile, queue)
+        if memory is not None:
+            h += '\n#$ -l m_mem_free=%dg' %(memory)
     h = re.sub('\n\s+', '\n', h)
     return h
 
 # torque header
-def pbs_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None):
+def pbs_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None, array=False):
     h = '''
     #!/bin/bash
     source ~/.bashrc
-    #PBS -t 1-%d%%%d
-    #PBS -j oe
-    #PBS -o %s
-    #PBS -q %s
-    cd $PBS_O_WORKDIR
-    ''' %(n_jobs, max_jobs, outfile, queue)
-    if memory is not None:
-        h += '\n#PBS -l mem=%dgb' %(memory)
+    '''
+    if array == True:
+        h += '''
+        #PBS -t 1-%d%%%d
+        #PBS -j oe
+        #PBS -o %s
+        #PBS -q %s
+        cd $PBS_O_WORKDIR
+        ''' %(n_jobs, max_jobs, outfile, queue)
+        if memory is not None:
+            h += '\n#PBS -l mem=%dgb' %(memory)
     h = re.sub('\n\s+', '\n', h)
     return h
 
@@ -110,14 +116,14 @@ class Submitter():
         self.commands = args.commands
         
         if self.cluster == 'broad':
-            self.header = sge_header(n_jobs=len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
+            self.header = sge_header
             self.submit_cmd = 'qsub'
             self.parse_job = lambda x: re.search('Your job (\d+)', x).group(1)
             self.stat_cmd = 'qstat'
             self.task_id = '$SGE_TASK_ID'
         
         if self.cluster == 'coyote':
-            self.header = pbs_header(n_jobs=len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
+            self.header = pbs_header
             self.submit_cmd = 'qsub'
             self.parse_job = lambda x: x.rstrip()
             self.stat_cmd = 'qstat -l'
@@ -127,7 +133,12 @@ class Submitter():
             self.m = None
     
     
-    def mktemp(self, prefix='tmp', suffix='.tmp'):
+    def get_header(self, array=False):
+        h = self.header(n_jobs = len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m, array=array)
+        return h
+    
+    
+    def mktemp(self, prefix='tmp', suffix='.tmp', array=False):
         # make temporary file and return [fh, fn]
         fh, fn = tempfile.mkstemp(dir=os.getcwd(), prefix=prefix, suffix=suffix)
         os.close(fh)
@@ -169,7 +180,7 @@ class Submitter():
     def write_array(self, commands):
         
         # write jobs
-        fh1, fn1 = self.mktemp(prefix='jobs.', suffix='.sh')
+        fh1, fn1 = self.mktemp(prefix='jobs.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
             fh1.write('job_array[%d]=\'%s\'\n' %(i+1, command))
         fh1.write('${job_array[$1]}\n')
@@ -177,7 +188,7 @@ class Submitter():
         os.chmod(fn1, stat.S_IRWXU)
         
         # write array
-        fh2, fn2 = self.mktemp(prefix='array.', suffix='.sh')
+        fh2, fn2 = self.mktemp(prefix='array.', suffix='.sh', array=True)
         fh2.write('%s %s\n' %(fn1, self.task_id))
         fh2.close()
         os.chmod(fn2, stat.S_IRWXU)
