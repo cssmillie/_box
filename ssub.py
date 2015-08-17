@@ -42,7 +42,8 @@ def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None
     #!/bin/bash
     source ~/.bashrc
     source /broad/software/scripts/useuse
-    #$ -t 1-%d%%%d
+    #$ -t 1-%d
+    #$ -tc %d
     #$ -j y
     #$ -o %s
     #$ -q %s
@@ -80,7 +81,7 @@ def parse_args():
     parser = argparse.ArgumentParser(usage = usage)
     parser.add_argument('-n', default=250, type=int, help='number of cpus')
     parser.add_argument('-q', default='short', help='queue')
-    parser.add_argument('-m', default=0, type=int help='memory (gb)')
+    parser.add_argument('-m', default=0, type=int, help='memory (gb)')
     parser.add_argument('-o', default='error', help='outfile')
     parser.add_argument('commands', nargs='?', default='')
     
@@ -109,14 +110,14 @@ class Submitter():
         self.commands = args.commands
         
         if self.cluster == 'broad':
-            self.header = sge_header(n_jobs=len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
+            self.header = sge_header(n_jobs=len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
             self.submit_cmd = 'qsub'
-            self.parse_job = lambda x: re.search('Your job (\d+)').group(1)
+            self.parse_job = lambda x: re.search('Your job (\d+)', x).group(1)
             self.stat_cmd = 'qstat'
             self.task_id = '$SGE_TASK_ID'
         
         if self.cluster == 'coyote':
-            self.header = pbs_header(n_jobs=len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
+            self.header = pbs_header(n_jobs=len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m)
             self.submit_cmd = 'qsub'
             self.parse_job = lambda x: x.rstrip()
             self.stat_cmd = 'qstat -l'
