@@ -86,8 +86,8 @@ def pbs_header(n_jobs, max_jobs=max_jobs, outfile='error', queue='short', memory
 def parse_args():
     
     # print usage statement
-    usage = "\n\ncat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n"
-    usage +="ssub -n 100 -q long -m 8 'command 1; command 2; command 3;"
+    usage = "\n\n  cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n"
+    usage +="  ssub -n 100 -q long -m 8 'command 1; command 2; command 3;"
     
     # add command line arguments
     parser = argparse.ArgumentParser(usage = usage)
