@@ -114,6 +114,7 @@ class Submitter():
         self.m = args.m
         self.q = args.q
         self.o = args.o
+        self.commands = args.commands
         
         if self.cluster == 'broad':
             self.header = sge_header
@@ -131,7 +132,6 @@ class Submitter():
         
         if self.m == 0:
             self.m = None
-    
     
     
     def get_header(self, commands, array=False):
