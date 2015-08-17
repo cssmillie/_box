@@ -138,6 +138,10 @@ class Submitter():
             self.commands = [command.strip() for command in self.commands.split(';')]
         else:
             self.commands = [line.rstrip() for line in sys.stdin.readlines()]
+        
+        if self.n < 0:
+            self.n = len(self.commands)
+    
     
     
     def get_header(self, array=False):
