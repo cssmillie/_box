@@ -119,7 +119,7 @@ class Submitter():
         if self.cluster == 'broad':
             self.header = sge_header
             self.submit_cmd = 'qsub'
-            self.parse_job = lambda x: re.search('Your job (\d+)', x).group(1)
+            self.parse_job = lambda x: re.search('Your job-array (\d+)', x).group(1)
             self.stat_cmd = 'qstat'
             self.task_id = '$SGE_TASK_ID'
         
@@ -183,7 +183,7 @@ class Submitter():
         # write jobs
         fh1, fn1 = self.mktemp(commands, prefix='jobs.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
-            fh1.write('job_array[%d]=\'%s\'\n' %(i+1, command))
+            fh1.write('job_array[%d]="%s"\n' %(i+1, command))
         fh1.write('${job_array[$1]}\n')
         fh1.close()
         os.chmod(fn1, stat.S_IRWXU)
