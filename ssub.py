@@ -36,7 +36,7 @@ to create and run pipelines:
 username = 'csmillie'
 cluster = 'broad'
 
-if cluster == 'broad'
+if cluster == 'broad':
     max_jobs = 1000
 if cluster == 'coyote':
     max_jobs = 250
