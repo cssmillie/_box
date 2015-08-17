@@ -190,7 +190,7 @@ class Submitter():
         message('Writing jobs %s' %(fn1))
         
         # write array
-        fn2 = re.sub('/j(\.[^/]*.sh)', r'/a\1', a)
+        fn2 = re.sub('/j(\.[^/]*.sh)', r'/a\1', fn1)
         fh2 = open(fn2, 'w')
         fh2.write(self.get_header(commands=commands, array=True))
         fh2.write('%s %s\n' %(fn1, self.task_id))
