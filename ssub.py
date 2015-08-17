@@ -102,7 +102,7 @@ def parse_args():
 
 class Submitter():
     
-    def __init__(self, cluster):
+    def __init__(self, cluster=cluster):
         
         # get command line arguments
         args = parse_args()
@@ -181,21 +181,23 @@ class Submitter():
     def write_array(self, commands):
         
         # write jobs
-        fh1, fn1 = self.mktemp(commands, prefix='jobs.', suffix='.sh', array=False)
+        fh1, fn1 = self.mktemp(commands, prefix='j.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
             fh1.write('job_array[%d]=`%s`\n' %(i+1, command))
         fh1.write('${job_array[$1]}\n')
         fh1.close()
         os.chmod(fn1, stat.S_IRWXU)
+        message('Writing jobs %s' %(fn1))
         
         # write array
-        fh2, fn2 = self.mktemp(commands, prefix='array.', suffix='.sh', array=True)
+        fn2 = re.sub('/j(\.[^/]*.sh)', r'/a\1', a)
+        fh2 = open(fn2, 'w')
+        fh2.write(self.get_header(commands=commands, array=True))
         fh2.write('%s %s\n' %(fn1, self.task_id))
         fh2.close()
         os.chmod(fn2, stat.S_IRWXU)
+        message('Writing array %s' %(fn2))
         
-        # message
-        message('Writing jobs %s and array %s' %(fn1, fn2))
         return fn2
     
     
