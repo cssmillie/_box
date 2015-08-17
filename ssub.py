@@ -143,7 +143,7 @@ class Submitter():
         fh, fn = tempfile.mkstemp(dir=os.getcwd(), prefix=prefix, suffix=suffix)
         os.close(fh)
         fh = open(fn, 'w')
-        fh.write(self.header)
+        fh.write(self.get_header(array=array))
         fn = os.path.abspath(fn)
         return fh, fn
     
