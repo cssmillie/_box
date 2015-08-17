@@ -36,8 +36,14 @@ to create and run pipelines:
 username = 'csmillie'
 cluster = 'broad'
 
+if cluster == 'broad'
+    max_jobs = 1000
+if cluster == 'coyote':
+    max_jobs = 250
+
+
 # sun grid engine header
-def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None, array=False):
+def sge_header(n_jobs, max_jobs=max_jobs, outfile='error', queue='short', memory=None, array=False):
     h = '''
     #!/bin/bash
     source ~/.bashrc
@@ -58,7 +64,7 @@ def sge_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None
     return h
 
 # torque header
-def pbs_header(n_jobs, max_jobs=250, outfile='error', queue='short', memory=None, array=False):
+def pbs_header(n_jobs, max_jobs=max_jobs, outfile='error', queue='short', memory=None, array=False):
     h = '''
     #!/bin/bash
     source ~/.bashrc
@@ -85,7 +91,7 @@ def parse_args():
     
     # add command line arguments
     parser = argparse.ArgumentParser(usage = usage)
-    parser.add_argument('-n', default=250, type=int, help='number of cpus')
+    parser.add_argument('-n', default=max_jobs, type=int, help='number of cpus')
     parser.add_argument('-q', default='short', help='queue')
     parser.add_argument('-m', default=0, type=int, help='memory (gb)')
     parser.add_argument('-o', default='error', help='outfile')
