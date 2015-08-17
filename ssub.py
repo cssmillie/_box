@@ -131,30 +131,20 @@ class Submitter():
         
         if self.m == 0:
             self.m = None
-        
-        # get commands
-        self.commands = args.commands
-        if self.commands != '':
-            self.commands = [command.strip() for command in self.commands.split(';')]
-        else:
-            self.commands = [line.rstrip() for line in sys.stdin.readlines()]
-        
-        if self.n < 0:
-            self.n = len(self.commands)
     
     
     
-    def get_header(self, array=False):
-        h = self.header(n_jobs = len(self.commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m, array=array)
+    def get_header(self, commands, array=False):
+        h = self.header(n_jobs = len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m, array=array)
         return h
     
     
-    def mktemp(self, prefix='tmp', suffix='.tmp', array=False):
+    def mktemp(self, commands, prefix='tmp', suffix='.tmp', array=False):
         # make temporary file and return [fh, fn]
         fh, fn = tempfile.mkstemp(dir=os.getcwd(), prefix=prefix, suffix=suffix)
         os.close(fh)
         fh = open(fn, 'w')
-        fh.write(self.get_header(array=array))
+        fh.write(self.get_header(commands=commands, array=array))
         fn = os.path.abspath(fn)
         return fh, fn
     
@@ -191,7 +181,7 @@ class Submitter():
     def write_array(self, commands):
         
         # write jobs
-        fh1, fn1 = self.mktemp(prefix='jobs.', suffix='.sh', array=False)
+        fh1, fn1 = self.mktemp(commands, prefix='jobs.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
             fh1.write('job_array[%d]=\'%s\'\n' %(i+1, command))
         fh1.write('${job_array[$1]}\n')
@@ -199,7 +189,7 @@ class Submitter():
         os.chmod(fn1, stat.S_IRWXU)
         
         # write array
-        fh2, fn2 = self.mktemp(prefix='array.', suffix='.sh', array=True)
+        fh2, fn2 = self.mktemp(commands, prefix='array.', suffix='.sh', array=True)
         fh2.write('%s %s\n' %(fn1, self.task_id))
         fh2.close()
         os.chmod(fn2, stat.S_IRWXU)
@@ -243,7 +233,17 @@ class Submitter():
     
 
 
-ssub = Submitter(cluster)
+def get_commands():
+    ssub = Submitter(cluster)
+    if ssub.commands != '':
+        commands = [command.strip() for command in ssub.commands.split(';')]
+    else:
+        commands = [line.rstrip() for line in sys.stdin.readLines()]    
+    return commands
+
 
 if __name__ == '__main__':
-    ssub.submit()
+    ssub = Submitter(cluster)
+    commands = get_commands()
+    ssub.submit(commands)
+
