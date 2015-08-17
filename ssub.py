@@ -243,20 +243,7 @@ class Submitter():
     
 
 
-def initialize():
-    # initialize global variables for ssub
-    
-    # parse command line args
-    ssub = Submitter(cluster)
-    
-    # calculate number of cpus
-    if ssub.n < 0:
-        ssub.n = len(commands)
-    
-    return ssub, commands
-
-
-ssub, commands = initialize()
+ssub = Submitter(cluster)
 
 if __name__ == '__main__':
-    ssub.submit(commands)
+    ssub.submit()
