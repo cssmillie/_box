@@ -114,7 +114,6 @@ class Submitter():
         self.m = args.m
         self.q = args.q
         self.o = args.o
-        self.commands = args.commands
         
         if self.cluster == 'broad':
             self.header = sge_header
@@ -132,6 +131,16 @@ class Submitter():
         
         if self.m == 0:
             self.m = None
+        
+        # get commands
+        self.commands = args.commands
+        if self.commands != '':
+            self.commands = [command.strip() for command in self.commands.split(';')]
+        else:
+            self.commands = [line.rstrip() for line in sys.stdin.readlines()]
+        
+        print self.commands
+        quit()
     
     
     def get_header(self, array=False):
@@ -238,13 +247,6 @@ def initialize():
     
     # parse command line args
     ssub = Submitter(cluster)
-
-    # get list of commands
-    commands = []
-    if ssub.commands != '':
-        commands += [command.strip() for command in ssub.commands.split(';')]
-    if select.select([sys.stdin], [], [], 0)[0]:
-        commands += [line.rstrip() for line in sys.stdin.readlines()]
     
     # calculate number of cpus
     if ssub.n < 0:
