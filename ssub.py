@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse, os, re, select, stat, subprocess, sys, tempfile, time
+import argparse, os, os.path, re, select, stat, subprocess, sys, tempfile, time
 from util import *
 
 '''
@@ -129,7 +129,7 @@ class Submitter():
     
     def mktemp(self, prefix='tmp', suffix='.tmp'):
         # make temporary file and return [fh, fn]
-        fh, fn = tempfile.mkstemp(prefix=prefix, suffix=suffix)
+        fh, fn = tempfile.mkstemp(dir=os.path.getcwd(), prefix=prefix, suffix=suffix)
         os.close(fh)
         fh = open(fn, 'w')
         fh.write(self.header)
