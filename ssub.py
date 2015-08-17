@@ -203,7 +203,7 @@ class Submitter():
         # submit a job array to the cluster
         if out == False:
             array_fn = self.write_array(commands)
-            job_id = self.submit_jobs([array_fn])
+            job_ids = self.submit_jobs([array_fn])
             return job_ids
         elif out == True:
             print '\n'.join(commands)
