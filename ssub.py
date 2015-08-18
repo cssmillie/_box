@@ -124,7 +124,7 @@ class Submitter():
         
         # queued submission
         self.queue = []
-        self.qsize = np.inf
+        self.qsize = 1e5
         
         if self.cluster == 'broad':
             self.header = sge_header
