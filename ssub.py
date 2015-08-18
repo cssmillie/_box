@@ -113,7 +113,7 @@ class Submitter():
         # get command line arguments
         args = parse_args()
         
-        # initialize cluster parameters
+        # cluster parameters
         self.cluster = cluster
         self.username = username
         self.n = args.n
@@ -121,6 +121,10 @@ class Submitter():
         self.q = args.q
         self.o = args.o
         self.commands = args.commands
+        
+        # queued submission
+        self.queue = []
+        self.qsize = np.inf
         
         if self.cluster == 'broad':
             self.header = sge_header
@@ -143,6 +147,25 @@ class Submitter():
     def get_header(self, commands, array=False):
         h = self.header(n_jobs = len(commands), max_jobs=self.n, outfile=self.o, queue=self.q, memory=self.m, array=array)
         return h
+    
+    
+    def set_queue_size(self, size):
+        # set the maximum size of the queue
+        self.s = size
+        return self
+    
+    
+    def add_to_queue(self, command, wait=True):
+        # add command to the queue
+        self.queue.append(command)
+        # if queue is at capacity, submit and clear queued commands
+        if len(self.queue) >= self.qsize:
+            if wait == True:
+                self.submit(self.queue)
+            if wait == False:
+                self.submit_and_wait(self.queue)
+            self.queue = []
+        return self.queue
     
     
     def mktemp(self, commands, prefix='tmp', suffix='.tmp', array=False):
@@ -229,8 +252,8 @@ class Submitter():
     
     def submit_and_wait(self, commands, out=False):
         # submit job array and wait for it to finish
-        job_ids = self.submit(commands, out = out)
-        self.wait(job_ids, out = out)
+        job_ids = self.submit(commands, out=out)
+        self.wait(job_ids, out=out)
     
     
     def submit_pipeline(self, pipeline, out=False):
