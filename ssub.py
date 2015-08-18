@@ -187,7 +187,7 @@ class Submitter():
     def write_array(self, commands):
         
         # write jobs
-        fh1, fn1 = self.mktemp(commands, prefix='j.', suffix='.sh', array=False)
+        fh1, fn1 = self.mktemp(commands, prefix='tmp.j.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
             fh1.write('job_array[%d]="%s"\n' %(i+1, command))
         fh1.write('eval ${job_array[$1]}\n')
@@ -196,7 +196,7 @@ class Submitter():
         message('Writing jobs %s' %(fn1))
         
         # write array
-        fn2 = re.sub('/j(\.[^/]*.sh)', r'/a\1', fn1)
+        fn2 = re.sub('/tmp.j(\.[^/]*.sh)', r'/tmp.a\1', fn1)
         fh2 = open(fn2, 'w')
         fh2.write(self.get_header(commands=commands, array=True))
         fh2.write('%s %s\n' %(fn1, self.task_id))
