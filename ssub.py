@@ -189,8 +189,8 @@ class Submitter():
         # write jobs
         fh1, fn1 = self.mktemp(commands, prefix='j.', suffix='.sh', array=False)
         for i, command in enumerate(commands):
-            fh1.write('job_array[%d]=`%s`\n' %(i+1, command))
-        fh1.write('${job_array[$1]}\n')
+            fh1.write('job_array[%d]="%s"\n' %(i+1, command))
+        fh1.write('eval ${job_array[$1]}\n')
         fh1.close()
         os.chmod(fn1, stat.S_IRWXU)
         message('Writing jobs %s' %(fn1))
