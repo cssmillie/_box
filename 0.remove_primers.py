@@ -1,5 +1,5 @@
 import argparse, primer, sys
-from util import *
+import util
 
 # Remove primers from sequences
 
@@ -28,11 +28,11 @@ def mismatches(seq, subseq, w):
     # Calculate the number of mismatches between a sequence and a given subsequence
     # Searches in a sliding window that starts at position 1 and ends at position w
     best_i = 0 # index (start position)
-    best_d = len(sequence) # edit distance
+    best_d = len(seq) # edit distance
     # for every start position
     for i in range(w):
         # calculate edit distance to the given subsequence
-        d = primer.MatchPrefix(seq[i,:], subseq)
+        d = primer.MatchPrefix(seq[i:], subseq)
         # keep track of the best index and edit distance
         if d < best_d:
             best_i = i
@@ -89,6 +89,7 @@ def run():
         [i,d,p] = find_best_match(seq, primers, args.w, args.d)
         if i:
             seq = seq[i+len(p):]
+            record[0] = '@' + record[0]
             record[1] = seq
             print '\n'.join(record)
 

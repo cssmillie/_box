@@ -1,26 +1,31 @@
 from bidict import *
 import os.path, os
-import sys
+import re, sys, util
 
 class SeqDB():
 	
 	def __init__(self, fn):
-		self.fn = fn
+
+		# Initialize attributes
+		self.fn = fn # db filename
+		self.db = bidict({}) # otu <-> seq
+		self.size = {} # otu -> size
+		
+		# Load sequence database
 		self = self.load_db()
 	
 	
 	def load_db(self):
-		# Initialize empty SeqDB
-		self.db = bidict({})
 		# Load existing SeqDB (if exists)
 		if os.path.exists(self.fn):
-			for line in open(self.fn):
-				[sid, seq] = line.rstrip().split()
-				self.db[int(sid)] = seq
+			for tag, seq in util.iter_fst(self.fn):
+				otu, size = re.search('>(.*);size=(\d+)', tag).groups()
+				self.db[int(otu)] = seq
+				self.size[int(otu)] = int(size)
 		return self
 	
 	
-	def add_seq(self, seq):
+	def add_seq(self, seq, size=1):
 		# Add new sequence to SeqDB
 		if seq not in ~self.db:
 			# If SeqDB is empty, set OTU = 1
@@ -29,7 +34,11 @@ class SeqDB():
 			# Otherwise, increment to get next OTU
 			else:
 				otu = max(self.db) + 1
-			self.db[:seq] = otu
+			self.db[otu] = seq
+			self.size[otu] = size
+		else:
+			otu = self.db[:seq]
+			self.size[otu] += size
 		return otu
 	
 	
@@ -37,13 +46,17 @@ class SeqDB():
 		# Merge SeqDB with another database
 		# If keep == 0, use ids in self
 		if keep == 0:
-			for seq in ~x.db:
-				self.add_seq(seq)
+			for otu in x.db:
+				seq = x.db[otu]
+				size = x.size[otu]
+				self.add_seq(seq, size=size)
 			return self
-		# If keep == 0, use ids in x
+		# If keep == 1, use ids in x
 		elif keep == 1:
-			for seq in ~self.db:
-				x.add_seq(seq)
+			for otu in self.db:
+				seq = self.db[otu]
+				size = self.size[otu]
+				x.add_seq(seq, size=size)
 			return x
 	
 	
@@ -53,30 +66,35 @@ class SeqDB():
 			seq = self.db[otu]
 			return seq
 		except:
-			quit('error: otu "%s "not in database' %(otu))
+			quit('Error: otu "%s "not in database' %(otu))
 	
 	
-	def get_otu(self, seq):
+	def get_otu(self, seq, size=1):
 		# Get OTU id associated with sequence
 		# If sequence in SeqDB, get OTU id
 		if seq in ~self.db:
 			otu = self.db[:seq]
 		# Otherwise, create new SeqDB entry
 		else:
-			otu = self.add_seq(seq)
+			otu = self.add_seq(seq, size=size)
 		# Return OTU id
 		return otu
 	
 		
 	def trim_db(self, l, keep_all=False):
+		
+		# ERROR : Identical sequences will double size
+		
 		# Trim sequences in SeqDB to length l
-		for seq in ~self.db:
+		for otu in self.db:
+			seq = self.db[otu]
+			size = self.size[otu]
 			new_seq = seq[:l]
-			self.add_seq(new_seq)
+			self.add_seq(new_seq, size=size)
 			# Remove other sequences from SeqDB (unless keep_all==True)
 			if keep_all == False:
 				if len(seq) != l:
-					del self.db[:seq]
+					del self.db[otu]
 		return self
 	
 	
@@ -90,7 +108,7 @@ class SeqDB():
 			return False
 	
 	
-	def write(self, out_fn=None, overwrite=False):
+	def write(self, out_fn=None, fmt='fasta',  overwrite=False, sort=True):
 		
 		# If no outfile, use infile
 		if out_fn is None:
@@ -101,9 +119,15 @@ class SeqDB():
 		# Write SeqDB to tempfile
 		tmp_fn = '%s.tmp' %(out_fn)
 		tmp = open(tmp_fn, 'w')
-		for otu in self.db:
+		for otu in sorted(self.db, key=lambda x: self.size[x], reverse=True):
 			seq = self.db[otu]
-			tmp.write('%d\t%s\n' %(otu, seq))
+			size = self.size[otu]
+			if fmt == 'fasta':
+				tmp.write('>%d;size=%d;\n%s\n' %(otu, size, seq))
+			elif fmt == 'tab':
+				tmp.write('%d\t%s\n' %(otu, seq))
+			else:
+				quit('Unrecognized format option')
 		tmp.close()
 		
 		# Validate and move to final destination

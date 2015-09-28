@@ -46,7 +46,7 @@ def iter_fst(fn):
         if line.startswith('>'):
             if seq != '':
                 yield [sid, seq]
-            sid = line[1:]
+            sid = line
             seq = ''
         else:
             seq += line
@@ -63,7 +63,6 @@ def iter_fsq(fn):
             if len(record) > 0:
                 yield record
             record = []
-            line = line[1:]
         record.append(line.rstrip())
     yield record
 
@@ -103,12 +102,26 @@ class timer():
 def reverse_complement(x):
     return x[::-1].translate(rctab)
 
-def jsd(x,y):
-    x = np.array(x)
-    y = np.array(y)
-    d1 = x*np.log(2*x/(x+y))
-    d2 = y*np.log(2*y/(x+y))
-    d1[np.isnan(d1)] = 0
-    d2[np.isnan(d2)] = 0
-    d = 0.5*sum(d1+d2)
-    return d
+def pretty_colors(format='hex'):
+    
+    def rgb_to_hex(rgb):
+        return '#%02x%02x%02x' % rgb
+
+    colors = [(31,  119, 180), (174, 199, 232), (255, 127, 14),  (255, 187, 120),  
+              (44,  160, 44),  (152, 223, 138), (214, 39,  40),  (255, 152, 150),  
+              (148, 103, 189), (197, 176, 213), (140, 86,  75),  (196, 156, 148),  
+              (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),  
+              (188, 189, 34),  (219, 219, 141), (23,  190, 207), (158, 218, 229)]  
+    
+    if format == 'rgb':
+        return colors
+
+    if format == 'hex':
+        return [rgb_to_hex(color) for color in colors]
+
+    if format == 'dec':
+        for i in range(len(colors)):  
+            r, g, b = colors[i]  
+            colors[i] = (r / 255., g / 255., b / 255.)
+        return colors
+

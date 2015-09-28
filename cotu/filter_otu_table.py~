@@ -63,9 +63,10 @@ def filter_otu_table(args, data):
         fmessage(data, '--log: applying log transform')
     # get a,b
     if pd.isnull(args.a):
-        args.a = data.min().min()
+        args.a = min(data)
+        print data.min().min()
     if pd.isnull(args.b):
-        args.b = data.max().max()
+        args.b = min(data)
     # filter by f <= a
     if pd.notnull(args.a) and pd.notnull(args.max_below_a):
         if args.max_below_a > 1:
