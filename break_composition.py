@@ -18,7 +18,7 @@ args = parser.parse_args()
 # read data
 x = pd.read_table(args.i, sep=args.d, header=0, index_col=0)
 if args.t == 'counts':
-    x = 1.*x/sum(axis=1)
+    x = 1.*x.divide(x.sum(axis=1), axis=0)
 if args.t == 'log':
     x = np.exp(x)
 nrowx, ncolx = np.shape(x)
@@ -26,12 +26,12 @@ nrowx, ncolx = np.shape(x)
 # check data
 if nrowx == 0 or ncolx == 0:
     quit('error: input file format (check delimiter)')
-if x.min().min() < 0 or x.max().max() > 1.25:
+if x.min().min() < 0 or x.max().max() > 1:
     quit('error: input file format (check data type)')
 
 # objective function
 def f(a):
-    # calculate new otu abundances
+    # calculate size-adjusted otu abundances
     y = np.einsum('ij,i->ij', x, a)
     # standardize otu abundances
     y = ((y - y.mean(axis=0))/y.std(axis=0))
@@ -41,8 +41,8 @@ def f(a):
     return y
 
 # initial estimates
-S = np.array([1. for i in range(nrowx)])
-b = np.array([[args.a, args.b] for i in range(nrowx)])
+S = np.array([1. for i in range(nrowx)]) # sizes
+b = np.array([[args.a, args.b] for i in range(nrowx)]) # bounds
 
 # run optimization
 soln = scipy.optimize.minimize(f, S, bounds=b, method='L-BFGS-B')
