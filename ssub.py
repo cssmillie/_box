@@ -33,13 +33,12 @@ to create and run pipelines:
 
 
 # set global variables
-username = 'csmillie'
-cluster = 'broad' # options = broad,amazon,coyote
+username = 'chris'
+cluster = 'amazon' # options = broad,amazon,coyote
 
 # amazon header - sun grid engine
-def amazon_header(n_jobs, outfile='error', queue='short', memory=None, array=False):
-    h = '''
-    #!/bin/bash
+def amazon_header(n_jobs, outfile='error', queue='', memory=None, array=False):
+    h = '''#!/bin/bash
     source ~/.bashrc
     '''
     if array == True:
@@ -48,14 +47,13 @@ def amazon_header(n_jobs, outfile='error', queue='short', memory=None, array=Fal
         #$ -j y
         #$ -o %s
         #$ -cwd
-        ''' %(n_jobs, outfile, queue)
+        ''' %(n_jobs, outfile)
     h = re.sub('\n\s+', '\n', h)
     return h
 
 # broad header - univa grid engine
 def broad_header(n_jobs, outfile='error', queue='short', memory=None, array=False):
-    h = '''
-    #!/bin/bash
+    h = '''#!/bin/bash
     source ~/.bashrc
     source /broad/software/scripts/useuse
     '''
@@ -74,8 +72,7 @@ def broad_header(n_jobs, outfile='error', queue='short', memory=None, array=Fals
 
 # coyote header - torque
 def coyote_header(n_jobs, outfile='error', queue='short', memory=None, array=False):
-    h = '''
-    #!/bin/bash
+    h = '''#!/bin/bash
     source ~/.bashrc
     '''
     if array == True:

@@ -1,0 +1,9 @@
+import re, urllib2
+
+for sid in open('ids.lst'):
+    sid = sid.rstrip()
+    url = 'http://www.ebi.ac.uk/ena/data/view/%s&display=xml' %(sid)
+    html = urllib2.urlopen(url).read()
+    lib = re.search('qiita_ptid_\d+\:(.*?)\"', html).group(1)
+    print sid, lib
+    
