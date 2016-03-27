@@ -1,43 +1,20 @@
 #!/usr/bin/env python
 
-import argparse, os, os.path, re, select, stat, subprocess, sys, tempfile, time
-from util import *
+import argparse, os, os.path, re, stat, subprocess, sys, tempfile, time
 
 '''
-ssub is a simple job submission script
-
 usage:
   cat list_of_commands.txt | ssub -n 100 -q short -m 8
-  ssub -n 100 -q long -m 8 "command1; command2; command3;"
-
-to use it as a python library:
-  import ssub
-  ssub.args.n = 100
-  ssub.args.q = "hour"
-  commands = get_commands()
-  job_ids = submit_array(ssub.args, commands)
-  wait_for_jobs(job_ids)
-  print "done"
-
-to create and run pipelines:
-  import ssub
-  ssub.args.q = "week"
-  ssub.args.G = "broadfolk"
-  commands1 = run_blast()
-  commands2 = parse_blast()
-  pipeline = [commands1, commands2]
-  submit_pipeline(args, pipeline)
-  print "done"
-
+  ssub -q long -m 8 "command1; command2; command3;"
 '''
 
 
 # set global variables
-username = 'chris'
-cluster = 'amazon' # options = broad,amazon,coyote
+username = 'csmillie'
+cluster = 'broad' # options = broad,amazon,coyote
 
 # amazon header - sun grid engine
-def amazon_header(n_jobs, outfile='error', queue='', memory=None, array=False):
+def amazon_header(n_jobs, error='error', queue='short', memory=None, array=False):
     h = '''#!/bin/bash
     source ~/.bashrc
     '''
@@ -47,15 +24,14 @@ def amazon_header(n_jobs, outfile='error', queue='', memory=None, array=False):
         #$ -j y
         #$ -o %s
         #$ -cwd
-        ''' %(n_jobs, outfile)
+        ''' %(n_jobs, error, queue)
     h = re.sub('\n\s+', '\n', h)
     return h
 
 # broad header - univa grid engine
-def broad_header(n_jobs, outfile='error', queue='short', memory=None, array=False):
+def broad_header(n_jobs, error='error', queue='short', memory=None, array=False):
     h = '''#!/bin/bash
     source ~/.bashrc
-    source /broad/software/scripts/useuse
     '''
     if array == True:
         h += '''
@@ -64,14 +40,14 @@ def broad_header(n_jobs, outfile='error', queue='short', memory=None, array=Fals
         #$ -o %s
         #$ -q %s
         #$ -cwd
-        ''' %(n_jobs, outfile, queue)
+        ''' %(n_jobs, error, queue)
         if memory is not None:
             h += '\n#$ -l m_mem_free=%dg\n' %(memory)
     h = re.sub('\n\s+', '\n', h)
     return h
 
 # coyote header - torque
-def coyote_header(n_jobs, outfile='error', queue='short', memory=None, array=False):
+def coyote_header(n_jobs, error='error', queue='short', memory=None, array=False):
     h = '''#!/bin/bash
     source ~/.bashrc
     '''
@@ -82,7 +58,7 @@ def coyote_header(n_jobs, outfile='error', queue='short', memory=None, array=Fal
         #PBS -o %s
         #PBS -q %s
         cd $PBS_O_WORKDIR
-        ''' %(n_jobs, outfile, queue)
+        ''' %(n_jobs, error, queue)
         if memory is not None:
             h += '\n#PBS -l mem=%dgb' %(memory)
     h = re.sub('\n\s+', '\n', h)
@@ -102,14 +78,15 @@ def parse_args():
     if __name__ == '__main__':
         
         # print usage statement
-        usage = "\n\n  cat list_of_commands.txt | ssub -n 100 -q hour -G gscidfolk -m 8 --io 10\n"
-        usage +="  ssub -n 100 -q long -m 8 'command 1; command 2; command 3;"
+        usage = "\n\n  cat list_of_commands.txt | ssub -q long -m 8 -o test\n"
+        usage +="  ssub -q short -m 16 'command 1; command 2; command 3;"
         
         # add command line arguments
         parser = argparse.ArgumentParser(usage = usage)
         parser.add_argument('-q', default='short', help='queue')
         parser.add_argument('-m', default=0, type=int, help='memory (gb)')
-        parser.add_argument('-o', default='error', help='outfile')
+        parser.add_argument('-o', default='tmp', help='output prefix')
+        parser.add_argument('-p', default=False, action='store_true', help='print commands')
         parser.add_argument('commands', nargs='?', default='')
 
         # parse arguments from stdin
@@ -134,6 +111,7 @@ class Submitter():
         self.m = args.m
         self.q = args.q
         self.o = args.o
+        self.p = args.p
         self.commands = args.commands
         
         if self.cluster == 'broad':
@@ -161,8 +139,8 @@ class Submitter():
             self.m = None
     
     
-    def get_header(self, commands, array=False):
-        h = self.header(n_jobs = len(commands), outfile=self.o, queue=self.q, memory=self.m, array=array)
+    def get_header(self, commands, error='error', array=False):
+        h = self.header(n_jobs = len(commands), error=error, queue=self.q, memory=self.m, array=array)
         return h
     
     def get_njobs(self):
@@ -176,7 +154,7 @@ class Submitter():
         fh, fn = tempfile.mkstemp(dir=os.getcwd(), prefix=prefix, suffix=suffix)
         os.close(fh)
         fh = open(fn, 'w')
-        fh.write(self.get_header(commands=commands, array=array))
+        fh.write(self.get_header(commands=commands, error='%s.err' %(fn), array=array))
         fn = os.path.abspath(fn)
         return fh, fn
     
@@ -207,66 +185,66 @@ class Submitter():
             process = subprocess.Popen(['%s %s' %(self.submit_cmd, fn)], stdout = subprocess.PIPE, shell=True)
             [out, error] = process.communicate()
             job_ids.append(self.parse_job(out))
-            message('Submitting job %s' %(fn))
+            print 'Submitting job %s' %(fn)
         return job_ids
     
     
     def write_array(self, commands):
         
         # write jobs
-        fh1, fn1 = self.mktemp(commands, prefix='tmp.j.', suffix='.sh', array=False)
+        fh1, fn1 = self.mktemp(commands, prefix='%s.' %(self.o), suffix='.j.sh', array=False)
         for i, command in enumerate(commands):
             fh1.write('job_array[%d]="%s"\n' %(i+1, command))
         fh1.write('eval ${job_array[$1]}\n')
         fh1.close()
         os.chmod(fn1, stat.S_IRWXU)
-        message('Writing jobs %s' %(fn1))
+        print 'Writing jobs %s' %(fn1)
         
         # write array
-        fn2 = re.sub('/tmp.j(\.[^/]*.sh)', r'/tmp.a\1', fn1)
+        fn2 = re.sub('j.sh$', 'a.sh', fn1)
         fh2 = open(fn2, 'w')
-        fh2.write(self.get_header(commands=commands, array=True))
+        fh2.write(self.get_header(commands=commands, error='%s.err' %(fn2), array=True))
         fh2.write('%s %s\n' %(fn1, self.task_id))
         fh2.close()
         os.chmod(fn2, stat.S_IRWXU)
-        message('Writing array %s' %(fn2))
+        print 'Writing array %s' %(fn2)
         
         return fn2
     
     
-    def submit(self, commands, out=False):
+    def submit(self, commands):
         # submit a job array to the cluster
         if len(commands) == 0:
             return []
         if type(commands) == str:
             commands = [commands]
-        if out == False:
+        if self.p == False:
             array_fn = self.write_array(commands)
             job_ids = self.submit_jobs([array_fn])
             return job_ids
-        elif out == True:
+        elif self.p == True:
             print '\n'.join(commands)
             return []
     
     
-    def wait(self, job_ids=[], out=False):
+    def wait(self, job_ids=[]):
         # wait for jobs to finish
-        if out == False:
+        if self.p == False:
             while True:
                 time.sleep(5)
                 if self.jobs_finished(job_ids):
                     break
     
-    def submit_and_wait(self, commands, out=False):
+    def submit_and_wait(self, commands):
         # submit job array and wait for it to finish
-        job_ids = self.submit(commands, out=out)
-        self.wait(job_ids=job_ids, out=out)
+        job_ids = self.submit(commands)
+        self.wait(job_ids=job_ids)
     
     
-    def submit_pipeline(self, pipeline, out=False):
+    def submit_pipeline(self, pipeline):
         # a pipeline is a list of lists of commands
         for commands in pipeline:
-            self.submit_and_wait(commands, out=out)
+            self.submit_and_wait(commands)
     
     
 
